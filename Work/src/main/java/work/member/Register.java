@@ -27,6 +27,7 @@ public class Register extends HttpServlet {
         String role = request.getParameter("role"); 
         String storeId = request.getParameter("storeId");
         String wageStr = request.getParameter("wage");
+        String birth = request.getParameter("birth");
 
         if (id == null) id = "";
         if (phone == null) phone = "";
@@ -45,6 +46,10 @@ public class Register extends HttpServlet {
         // 1. 공통 필수 체크
         if (id.isEmpty() || pw == null || pw.isEmpty()) {
             out.print("{\"status\":\"fail\", \"message\":\"아이디와 비밀번호를 입력해주세요.\"}");
+            return;
+        }
+        if (birth == null || birth.trim().isEmpty()) {
+            out.print("{\"status\":\"fail\", \"message\":\"생년월일을 입력해주세요.\"}");
             return;
         }
 
@@ -82,6 +87,7 @@ public class Register extends HttpServlet {
         dto.setRole(role);
         dto.setStoreId(storeId);
         dto.setHourlyWage(wage);
+        dto.setBirth(birth.trim());
 
         // 4. 아이디 중복 체크
         if (dao.getMember(id) != null) {

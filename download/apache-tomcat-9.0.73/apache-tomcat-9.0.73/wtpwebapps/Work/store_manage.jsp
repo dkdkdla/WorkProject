@@ -99,7 +99,7 @@
         <div class="row g-3">
             <div class="col-md-5">
                 <label class="form-label small fw-bold text-secondary">매장 코드 (ID)</label>
-                <input type="text" id="storeId" class="form-control fw-bold" placeholder="예: store02" maxlength="20">
+                <input type="text" id="storeId" class="form-control fw-bold" placeholder="예: store01" maxlength="20">
                 <small class="text-muted">영문/숫자 조합, 중복 불가</small>
             </div>
             <div class="col-md-5">

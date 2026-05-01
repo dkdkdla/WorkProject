@@ -19,6 +19,7 @@ public class MemberDTO {
 	private int hourlyWage;
 	private String storeId;
 	private String empName;
+	private String birth;
 	
 	public String getId() {
 		return id;
@@ -67,5 +68,11 @@ public class MemberDTO {
 	}
 	public void setEmpName(String empName) {
 		this.empName = empName;
+	}
+	public String getBirth() {
+		return birth;
+	}
+	public void setBirth(String birth) {
+		this.birth = birth;
 	}
 }

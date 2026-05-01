@@ -117,6 +117,12 @@
                     </div>
                 </div>
 
+                <div class="mb-3">
+                    <label class="form-label">생년월일 <span class="required-mark">*</span></label>
+                    <input type="date" name="birth" id="birth" class="form-control" required>
+                    <small class="text-muted hint-text">실제 생년월일을 입력해주세요.</small>
+                </div>
+
                 <div class="row g-3 mb-4">
                     <div class="col-6" id="storeWrap">
                         <label class="form-label" id="storeLabel">소속 매장 ID <span class="text-muted">(선택)</span></label>
@@ -145,6 +151,14 @@
 <jsp:include page="footer.jsp" />
 
 <script>
+    // 생년월일 기본값: 오늘 날짜
+    window.addEventListener('DOMContentLoaded', function() {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        document.getElementById('birth').value = yyyy + '-' + mm + '-' + dd;
+    });
     function handleRoleChange(role) {
         const adminNotice = document.getElementById("adminNotice");
         const storeLabel  = document.getElementById("storeLabel");

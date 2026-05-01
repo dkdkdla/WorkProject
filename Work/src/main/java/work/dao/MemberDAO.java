@@ -469,7 +469,7 @@ public class MemberDAO {
 
             // 1. 회원 정보 저장 (tb_member) - 점장은 PENDING, 직원은 ACTIVE
             String memStatus = "A".equals(dto.getRole()) ? "PENDING" : "ACTIVE";
-            String sql1 = "INSERT INTO tb_member (mem_id, mem_pw, mem_name, mem_phone, mem_role, hourly_wage, store_id, mem_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql1 = "INSERT INTO tb_member (mem_id, mem_pw, mem_name, mem_phone, mem_role, hourly_wage, store_id, mem_status, mem_birth) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
             pstmt = conn.prepareStatement(sql1);
             pstmt.setString(1, dto.getId());
             pstmt.setString(2, dto.getPw());
@@ -479,6 +479,7 @@ public class MemberDAO {
             pstmt.setInt(6, dto.getHourlyWage());
             pstmt.setString(7, storeId);
             pstmt.setString(8, memStatus);
+            pstmt.setString(9, dto.getBirth());
             pstmt.executeUpdate();
             pstmt.close();
 
