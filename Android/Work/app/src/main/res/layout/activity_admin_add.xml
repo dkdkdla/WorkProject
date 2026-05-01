@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="30dp"
+    android:gravity="center"
+    android:background="#F5F5F5">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="근태 기록 수동 추가"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#333333"
+        android:layout_marginBottom="30dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="직원 선택"
+        android:layout_gravity="start"
+        android:layout_marginBottom="5dp"/>
+
+    <Spinner
+        android:id="@+id/spMember"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="@drawable/bg_button_navy"
+        android:backgroundTint="#FFFFFF"
+        android:spinnerMode="dropdown"
+        android:layout_marginBottom="15dp"/>
+
+    <EditText
+        android:id="@+id/etAddDate"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:hint="날짜 (YYYY-MM-DD)"
+        android:background="@drawable/bg_button_navy"
+        android:backgroundTint="#FFFFFF"
+        android:paddingHorizontal="15dp"
+        android:layout_marginBottom="15dp"/>
+
+    <EditText
+        android:id="@+id/etAddTime"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:hint="시간 (HH:mm:ss)"
+        android:background="@drawable/bg_button_navy"
+        android:backgroundTint="#FFFFFF"
+        android:paddingHorizontal="15dp"
+        android:layout_marginBottom="15dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="구분 (출근 / 퇴근)"
+        android:layout_gravity="start"
+        android:layout_marginBottom="5dp"/>
+
+    <Spinner
+        android:id="@+id/spType"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="@drawable/bg_button_navy"
+        android:backgroundTint="#FFFFFF"
+        android:spinnerMode="dropdown"
+        android:layout_marginBottom="30dp"/>
+
+    <Button
+        android:id="@+id/btnAddSave"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="추가하기"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:backgroundTint="#4CAF50"
+        android:textColor="#FFFFFF"/>
+
+</LinearLayout>

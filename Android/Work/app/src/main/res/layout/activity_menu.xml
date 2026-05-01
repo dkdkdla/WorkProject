@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="30dp"
+    android:gravity="center">
+
+    <TextView
+        android:id="@+id/tvWelcome"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="환영합니다"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@color/navy_primary"
+        android:layout_marginBottom="10dp"/>
+
+    <TextView
+        android:id="@+id/tvStoreInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="현재 매장: -"
+        android:textSize="16sp"
+        android:textColor="#555555"
+        android:layout_marginBottom="30dp"/>
+
+    <Button
+        android:id="@+id/btnChangeStore"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:text="다른 매장으로 변경"
+        android:textSize="14sp"
+        android:background="@drawable/bg_button_navy"
+        android:backgroundTint="#9FA8DA"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="30dp"/>
+
+    <Button
+        android:id="@+id/btnGoQR"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="QR 출퇴근"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:background="@drawable/bg_button_navy"
+        android:textColor="@color/white"
+        android:layout_marginBottom="15dp"/>
+
+    <Button
+        android:id="@+id/btnGoList"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="내 기록 / 급여 조회"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:background="@drawable/bg_button_navy"
+        android:textColor="@color/white"
+        android:layout_marginBottom="15dp"/>
+
+    <Button
+        android:id="@+id/btnBoard"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="📢 소통 게시판"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:background="@drawable/bg_button_navy"
+        android:backgroundTint="#FF9800"
+        android:textColor="@color/white"
+        android:layout_marginBottom="15dp"/>
+
+    <Button
+        android:id="@+id/btnGoProfile"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="내 정보 수정"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:background="@drawable/bg_button_navy"
+        android:textColor="@color/white"
+        android:layout_marginBottom="30dp"/>
+
+    <Button
+        android:id="@+id/btnLogout"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="로그아웃"
+        android:backgroundTint="#AAAAAA"
+        android:textColor="#FFFFFF"/>
+
+</LinearLayout>

@@ -1,0 +1,226 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>회원가입 - AlbaPass</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="<%=request.getContextPath()%>/css/style.css">
+    <link rel="icon" type="image/png" href="<%=request.getContextPath()%>/jlogo.png">
+    <style>
+        body { 
+            background-color: #f8f9fc; 
+            font-family: 'Pretendard', sans-serif; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        
+        main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            padding: 40px 0;
+        }
+
+        .register-card { 
+            max-width: 500px; 
+            margin: 0 auto; 
+            border: none; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
+            background: white;
+        }
+        
+        .form-label { font-size: 0.85rem; font-weight: 700; color: #4e73df; }
+        .required-mark { color: #e74a3b; }
+        .role-selector .btn-check:checked + .btn { background-color: #4e73df; color: white; border-color: #4e73df; }
+        #adminCodeArea { display: none; transition: all 0.3s ease-in-out; }
+        #adminNotice { display: none; }
+        .hint-text { font-size: 11px; margin-top: 4px; display: block; }
+        
+        /* 🚨 [추가] 로고 박스 애니메이션 및 스타일 */
+        .logo-wrapper {
+            display: inline-block;
+            overflow: hidden;
+            width: 240px;
+            height: 100px;
+            border-radius: 12px;
+            background-color: #fff;
+            transition: transform 0.3s ease;
+        }
+        .logo-wrapper:hover { transform: scale(1.02); }
+    </style>
+</head>
+<body>
+
+<jsp:include page="navbar.jsp" />
+
+<main>
+    <div class="container">
+        <div class="card register-card p-4 p-md-5">
+            <div class="text-center mb-4">
+                <a href="<%=request.getContextPath()%>/default.jsp" class="logo-wrapper mb-2">
+                    <img src="<%=request.getContextPath()%>/logo.png" alt="AlbaPass 로고" 
+                         style="width: 100%; height: 100%; object-fit: contain; transform: scale(1); transform-origin: center;">
+                </a>
+                <h3 class="fw-bold text-dark mt-2">회원가입</h3>
+            </div>
+
+            <form id="regForm">
+                <div class="mb-4 text-center">
+                    <div class="btn-group role-selector w-100" role="group">
+                        <input type="radio" class="btn-check" name="role" id="roleStaff" value="S" checked onclick="handleRoleChange('S')">
+                        <label class="btn btn-outline-primary py-2" for="roleStaff"><i class="fa-solid fa-user me-2"></i>직원</label>
+                        
+                        <input type="radio" class="btn-check" name="role" id="roleAdmin" value="A" onclick="handleRoleChange('A')">
+                        <label class="btn btn-outline-primary py-2" for="roleAdmin"><i class="fa-solid fa-user-tie me-2"></i>관리자</label>
+                    </div>
+                </div>
+
+                <div id="adminNotice" class="mb-3 p-3 bg-warning-subtle rounded-3">
+                    <i class="fa-solid fa-circle-info me-2 text-warning"></i>
+                    <small class="text-dark fw-bold">점장 가입 신청 후 전체관리자 승인이 완료되면 로그인 가능합니다.</small>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">아이디 <span class="required-mark">*</span></label>
+                    <input type="text" name="id" class="form-control" placeholder="아이디 입력" required>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">비밀번호 <span class="required-mark">*</span></label>
+                        <input type="password" id="pw" name="pw" class="form-control" placeholder="입력" required onkeyup="checkPwMatch()">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">비밀번호 확인 <span class="required-mark">*</span></label>
+                        <input type="password" id="pwCheck" class="form-control" placeholder="재입력" required onkeyup="checkPwMatch()">
+                    </div>
+                    <div class="col-12 mt-1">
+                        <small id="pwMsg" style="font-size: 11px;"></small>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">이름 <span class="required-mark">*</span></label>
+                        <input type="text" name="name" class="form-control" placeholder="실명" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">전화번호 <span class="required-mark">*</span></label>
+                        <input type="text" name="phone" class="form-control" placeholder="010-0000-0000" required>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-6" id="storeWrap">
+                        <label class="form-label" id="storeLabel">소속 매장 ID <span class="text-muted">(선택)</span></label>
+                        <input type="text" name="storeId" class="form-control" placeholder="매장코드 입력 (선택)">
+                        <small id="storeHint" class="text-muted hint-text">없으면 나중에 매장 관리에서 신청 가능합니다.</small>
+                    </div>
+                    <div class="col-6" id="wageWrap">
+                        <label class="form-label text-muted">시급 (숫자만)</label>
+                        <input type="number" name="wage" id="wage" class="form-control" 
+                               placeholder="예: 9860" min="0" step="10"
+                               oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+                        <small class="text-muted hint-text">직원일 경우에만 해당</small>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm mb-3">가입하기</button>
+            </form>
+
+            <div class="text-center">
+                <a href="login.jsp" class="small text-decoration-none text-muted">이미 계정이 있으신가요? <strong>로그인</strong></a>
+            </div>
+        </div>
+    </div>
+</main>
+
+<jsp:include page="footer.jsp" />
+
+<script>
+    function handleRoleChange(role) {
+        const adminNotice = document.getElementById("adminNotice");
+        const storeLabel  = document.getElementById("storeLabel");
+        const storeWrap   = document.getElementById("storeWrap");
+        const storeInput  = document.querySelector("input[name='storeId']");
+        const storeHint   = document.getElementById("storeHint");
+        const wageWrap    = document.getElementById("wageWrap");
+
+        if (role === 'A') {
+            // 점장: 승인 안내 표시, 매장ID/시급 숨김
+            adminNotice.style.display = "block";
+            storeWrap.style.display   = "none";
+            storeInput.required       = false;
+            storeInput.value          = "";
+            wageWrap.style.display    = "none";
+        } else {
+            // 직원: 매장ID 선택, 시급 표시
+            adminNotice.style.display = "none";
+            storeWrap.style.display   = "block";
+            storeInput.required       = false;
+            storeLabel.innerHTML      = '소속 매장 ID <span class="text-muted">(선택)</span>';
+            storeInput.placeholder    = "매장코드 입력 (선택)";
+            storeHint.innerText       = "없으면 나중에 매장 관리에서 신청 가능합니다.";
+            storeHint.className       = "text-muted hint-text";
+            wageWrap.style.display    = "block";
+        }
+    }
+
+    function checkPwMatch() {
+        const pw = document.getElementById("pw").value;
+        const pwCheck = document.getElementById("pwCheck").value;
+        const msg = document.getElementById("pwMsg");
+        if (!pw || !pwCheck) { msg.innerText = ""; return; }
+        if (pw === pwCheck) {
+            msg.style.color = "#1cc88a";
+            msg.innerText = "✓ 비밀번호가 일치합니다.";
+        } else {
+            msg.style.color = "#e74a3b";
+            msg.innerText = "✕ 비밀번호가 일치하지 않습니다.";
+        }
+    }
+
+    document.getElementById('regForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const pw = document.getElementById("pw").value;
+        const pwCheck = document.getElementById("pwCheck").value;
+        if (pw !== pwCheck) {
+            alert("비밀번호를 다시 확인해 주세요.");
+            return;
+        }
+        
+        const formData = new URLSearchParams(new FormData(this));
+
+        // role 값 명시적으로 추가 (radio 버튼이 숨겨질 경우 대비)
+        const selectedRole = document.querySelector('input[name="role"]:checked');
+        if (selectedRole) {
+            formData.set('role', selectedRole.value);
+        }
+        
+        fetch('Register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert(data.message);
+                location.href = 'login.jsp';
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(err => alert("서버 통신 오류가 발생했습니다."));
+    });
+</script>
+
+</body>
+</html>

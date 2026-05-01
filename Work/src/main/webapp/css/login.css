@@ -1,0 +1,55 @@
+@charset "UTF-8";
+
+/* 1. 기본 레이아웃 (register.jsp와 동일한 구조) */
+body { 
+    background-color: #f8f9fc; 
+    font-family: 'Pretendard', sans-serif; 
+    min-height: 100vh; 
+    display: flex; 
+    flex-direction: column; 
+}
+
+main.login-main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 40px 0; /* 상하 여백 */
+}
+
+/* 2. 로그인 카드 (register-card와 완벽히 동일한 디자인) */
+.login-card { 
+    width: 100%;
+    max-width: 500px; 
+    margin: 0 auto; 
+    border: none; 
+    border-radius: 20px; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
+    background: white;
+}
+
+/* 3. 입력 폼 밑줄 스타일 (기존 로그인 페이지의 아이덴티티 유지) */
+.input-group-lg > .form-control,
+.input-group-lg > .input-group-text {
+    border-radius: 0;
+    border: none;
+    border-bottom: 2px solid #edf2f7;
+    background-color: transparent !important;
+}
+
+.form-control:focus {
+    box-shadow: none !important;
+    border-bottom-color: #4e73df !important;
+}
+
+/* 4. 하단 링크 영역 */
+.find-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 1rem;
+}
+
+.find-links a { color: #858796; font-size: 0.85rem; text-decoration: none; }
+.find-links a:hover { color: #4e73df; text-decoration: underline; }
+.find-links .divider { width: 1px; height: 12px; background-color: #e3e6f0; }

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="30dp"
+    android:gravity="center"
+    android:background="#E8EAF6">
+
+    <TextView
+        android:id="@+id/tvEditTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="기록 수정"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#1A237E"
+        android:layout_marginBottom="30dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="기록 유형 (출근/퇴근)"
+        android:textColor="#555555"
+        android:layout_marginBottom="5dp"/>
+    <EditText
+        android:id="@+id/etEditType"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="@drawable/bg_button_navy"
+        android:backgroundTint="#FFFFFF"
+        android:paddingHorizontal="20dp"
+        android:layout_marginBottom="20dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="시간 (YYYY-MM-DD HH:MM:SS)"
+        android:textColor="#555555"
+        android:layout_marginBottom="5dp"/>
+    <EditText
+        android:id="@+id/etEditTime"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="@drawable/bg_button_navy"
+        android:backgroundTint="#FFFFFF"
+        android:paddingHorizontal="20dp"
+        android:layout_marginBottom="30dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnEditDelete"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:layout_weight="1"
+            android:text="삭제"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:backgroundTint="#FF5252"
+            android:textColor="#FFFFFF"
+            android:layout_marginRight="10dp"/>
+
+        <Button
+            android:id="@+id/btnEditSave"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:layout_weight="1"
+            android:text="저장 하기"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:backgroundTint="#1A237E"
+            android:textColor="#FFFFFF"/>
+    </LinearLayout>
+
+</LinearLayout>

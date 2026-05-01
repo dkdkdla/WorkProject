@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="30dp"
+    android:background="#ffffff">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="직원 시급 관리"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="40dp"
+        android:textColor="#333333"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="이름 (아이디)"
+        android:textColor="#666666"
+        android:layout_marginBottom="5dp"/>
+    <EditText
+        android:id="@+id/etEditMemName"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="#f0f0f0"
+        android:paddingLeft="15dp"
+        android:enabled="false"
+        android:textColor="#333333"
+        android:textSize="16sp"
+        android:layout_marginBottom="20dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="전화번호"
+        android:textColor="#666666"
+        android:layout_marginBottom="5dp"/>
+    <EditText
+        android:id="@+id/etEditMemPhone"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:background="#f0f0f0"
+        android:paddingLeft="15dp"
+        android:enabled="false"
+        android:textColor="#333333"
+        android:textSize="16sp"
+        android:layout_marginBottom="20dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="시급 (원)"
+        android:textColor="#673AB7"
+        android:textStyle="bold"
+        android:layout_marginBottom="5dp"/>
+    <EditText
+        android:id="@+id/etEditMemWage"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:background="#f0f0f0"
+        android:paddingLeft="15dp"
+        android:inputType="number"
+        android:textStyle="bold"
+        android:textSize="20sp"
+        android:layout_marginBottom="40dp"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnMemberCancel"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:layout_weight="1"
+            android:text="닫기"
+            android:textSize="16sp"
+            android:backgroundTint="#aaaaaa"
+            android:layout_marginRight="10dp"/>
+
+        <Button
+            android:id="@+id/btnMemberSave"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:layout_weight="1"
+            android:text="시급 변경 저장"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:backgroundTint="#673AB7"/>
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="#F5F5F5">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="게시글 작성"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#333333"
+        android:layout_marginBottom="20dp"/>
+
+    <EditText
+        android:id="@+id/etTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="제목을 입력하세요"
+        android:background="@android:color/white"
+        android:padding="15dp"
+        android:layout_marginBottom="10dp"/>
+
+    <EditText
+        android:id="@+id/etContent"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:hint="내용을 입력하세요"
+        android:gravity="top|start"
+        android:background="@android:color/white"
+        android:padding="15dp"
+        android:layout_marginBottom="10dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@android:color/white"
+        android:padding="10dp"
+        android:layout_marginBottom="20dp">
+
+        <Button
+            android:id="@+id/btnSelectFile"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📎 파일 선택"
+            android:backgroundTint="#555555"/>
+
+        <TextView
+            android:id="@+id/tvFileName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="선택된 파일 없음"
+            android:textColor="#666"
+            android:layout_marginLeft="10dp"/>
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnSubmit"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="등록하기"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:backgroundTint="#3F51B5"/>
+
+</LinearLayout>

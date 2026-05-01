@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/gray_bg"
+    android:padding="30dp">
+
+    <TextView
+        android:id="@+id/tvSelectTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="매장 선택"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="@color/navy_primary"
+        android:layout_marginBottom="10dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="로그인할 매장을 선택해주세요."
+        android:textSize="16sp"
+        android:textColor="#555555"
+        android:layout_marginBottom="30dp"/>
+
+    <ListView
+        android:id="@+id/lvStoreList"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:divider="@null"
+        android:dividerHeight="10dp"
+        android:background="#00000000"/>
+
+</LinearLayout>
