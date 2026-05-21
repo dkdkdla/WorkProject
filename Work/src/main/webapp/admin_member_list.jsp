@@ -4,6 +4,8 @@
 <%
     // 세션에서 로그인한 내 아이디 가져오기
     String loggedInId = (String)session.getAttribute("userId");
+    String currentStoreId = (String)session.getAttribute("userStoreId");
+    if (currentStoreId == null) currentStoreId = "";
 
     // 서블릿에서 넘겨준 리스트 데이터 수신
     ArrayList<MemberDTO> list = (ArrayList<MemberDTO>)request.getAttribute("memberList");
@@ -70,14 +72,13 @@
                             <td class="ps-4">
                                 <span class="fw-bold text-dark"><%=m.getName()%></span>
                                 <% if (isAdmin) { %>
-								    <span class="badge bg-primary ms-1" style="font-size: 0.7rem;">점장</span>
-								<% } else { %>
-								    <span class="badge bg-warning text-dark ms-1" style="font-size: 0.7rem;">직원</span>
+                                    <span class="badge bg-primary ms-1" style="font-size: 0.7rem;">점장</span>
+                                <% } else { %>
+                                    <span class="badge bg-warning text-dark ms-1" style="font-size: 0.7rem;">직원</span>
                                 <% } %>
                                 <% if (!isAdmin && m.getRoleId() == 0) { %>
                                 <span class="badge bg-danger ms-1" style="font-size:0.7rem;">역할 미지정</span>
                                 <% } %>
-								<% } %>
                                 <% if (isSelf) { %>
                                     <span class="badge bg-dark text-white ms-1" style="font-size: 0.7rem;">나</span>
                                 <% } %>
@@ -131,6 +132,9 @@
     </div>
 </div>
 
+<%-- JavaScript에서 안전하게 값을 가져가기 위한 hidden 태그 추가 --%>
+<input type="hidden" id="currentStoreId" value="<%=currentStoreId%>">
+
 <script>
 // 페이지 로드 시 역할 목록 로드
 document.addEventListener('DOMContentLoaded', function() {
@@ -140,7 +144,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // 현재 매장의 역할 목록 로드 후 모든 드롭다운에 적용
 async function loadRoleOptions() {
     try {
-        const storeId = '<%=(String)session.getAttribute("userStoreId")%>';
+        // JSP 표현식 대신 hidden input 요소의 값을 읽어옴 (Eclipse 에디터 오류 방지)
+        const storeId = document.getElementById('currentStoreId').value;
         const res  = await fetch('GetRoles?storeId=' + encodeURIComponent(storeId));
         const data = await res.json();
 
@@ -194,39 +199,40 @@ async function assignRole(memId, select) {
             wageEl.after(badge);
             setTimeout(() => badge.remove(), 2000);
         } else {
-            alert(data.message);
+            showToast(data.message, data.status === 'success' ? 'success' : 'danger');
             select.value = select.dataset.current || '0';
         }
     } catch (e) {
-        alert('통신 오류가 발생했습니다.');
+        showToast('통신 오류가 발생했습니다.', 'warning');
         select.value = select.dataset.current || '0';
     }
 }
-    function filterTable() {
-        let input = document.getElementById("searchInput");
-        let filter = input.value.toUpperCase();
-        let table = document.getElementById("memberTable");
-        let tr = table.getElementsByTagName("tr");
 
-        for (let i = 1; i < tr.length; i++) {
-            let tdName = tr[i].getElementsByTagName("td")[0]; 
-            let tdPhone = tr[i].getElementsByTagName("td")[1]; 
+function filterTable() {
+    let input = document.getElementById("searchInput");
+    let filter = input.value.toUpperCase();
+    let table = document.getElementById("memberTable");
+    let tr = table.getElementsByTagName("tr");
+
+    for (let i = 1; i < tr.length; i++) {
+        let tdName = tr[i].getElementsByTagName("td")[0]; 
+        let tdPhone = tr[i].getElementsByTagName("td")[1]; 
+        
+        if (tdName && tdPhone) {
+            let name = tdName.textContent || tdName.innerText;
+            let phone = tdPhone.textContent || tdPhone.innerText;
             
-            if (tdName && tdPhone) {
-                let name = tdName.textContent || tdName.innerText;
-                let phone = tdPhone.textContent || tdPhone.innerText;
-                
-                tr[i].style.display = (name.toUpperCase().includes(filter) || phone.toUpperCase().includes(filter)) ? "" : "none";
-            }
+            tr[i].style.display = (name.toUpperCase().includes(filter) || phone.toUpperCase().includes(filter)) ? "" : "none";
         }
     }
+}
 
-    function removeStaff(id, name) {
-        // 🚨 영구 삭제가 아닌 '매장 제외'임을 안내
-        if (confirm("정말 '" + name + "' 직원을 현재 매장에서 제외하시겠습니까?\n이 직원의 계정은 유지되지만, 현재 매장 리스트에서는 사라집니다.")) {
-            location.href = 'AdminMemberDelete?id=' + id;
-        }
+function removeStaff(id, name) {
+    // 영구 삭제가 아닌 '매장 제외'임을 안내
+    if (confirm("정말 '" + name + "' 직원을 현재 매장에서 제외하시겠습니까?\n이 직원의 계정은 유지되지만, 현재 매장 리스트에서는 사라집니다.")) {
+        location.href = 'AdminMemberDelete?id=' + id;
     }
+}
 </script>
 
 <%@ include file="footer.jsp" %>
