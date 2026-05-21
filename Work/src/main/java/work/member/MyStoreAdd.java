@@ -20,11 +20,15 @@ public class MyStoreAdd extends HttpServlet {
         PrintWriter out = response.getWriter();
         
         HttpSession session = request.getSession();
-        String userId = (String)session.getAttribute("userId");
+        String userId  = (String) session.getAttribute("userId");
         String storeId = request.getParameter("add_store_id");
 
-        // 1. 기본 유효성 검사 (세션 및 파라미터)
-        if (userId == null) {
+        // 앱에서 호출 시 세션 없으므로 파라미터로도 받음
+        if (userId == null || userId.isEmpty()) {
+            userId = request.getParameter("userId");
+        }
+
+        if (userId == null || userId.trim().isEmpty()) {
             out.print("{\"status\":\"fail\", \"message\":\"세션이 만료되었습니다. 다시 로그인해주세요.\"}");
             return;
         }
@@ -51,11 +55,10 @@ public class MyStoreAdd extends HttpServlet {
                 return;
             }
 
-            // 4. 최종 등록 (tb_my_stores에 데이터 삽입)
             boolean success = dao.addMyStore(userId, storeId);
 
             if (success) {
-                out.print("{\"status\":\"success\", \"message\":\"새로운 근무지가 목록에 추가되었습니다.\"}");
+                out.print("{\"status\":\"success\", \"message\":\"소속 신청이 완료되었습니다. 점장 승인 후 매장이 활성화됩니다.\"}");
             } else {
                 out.print("{\"status\":\"fail\", \"message\":\"매장 추가 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.\"}");
             }

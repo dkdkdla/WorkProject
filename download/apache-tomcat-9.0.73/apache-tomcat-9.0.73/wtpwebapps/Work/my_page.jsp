@@ -27,6 +27,7 @@
     <link rel="stylesheet" href="<%=request.getContextPath()%>/css/style.css">
     <link rel="icon" type="image/png" href="<%=request.getContextPath()%>/jlogo.png">
     <style>
+        .admin-register-box { border-top: 4px solid #4e73df; }
         .input-group-text { min-width: 65px; justify-content: center; }
         .custom-card { border-radius: 12px; border: none; }
     </style>
@@ -57,11 +58,32 @@
                 </div>
                 <div class="col-md-6">
                     <label class="form-label small fw-bold text-secondary">연락처</label>
-                    <input type="text" name="phone" class="form-control" value="<%=dto.getPhone()%>" required>
+                    <input type="text" name="phone" class="form-control" value="<%=dto.getPhone()%>"
+                        maxlength="13" oninput="autoHyphen(this)" required>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label small fw-bold text-secondary">시급 (원)</label>
                     <input type="number" name="wage" class="form-control" value="<%=dto.getHourlyWage()%>">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold text-secondary">근무 가능 요일</label>
+                    <div class="d-flex flex-wrap gap-1 mt-1">
+                        <%
+                            String[] allDays = {"월","화","수","목","금","토","일"};
+                            String workDaysStr = dto.getWorkDays() != null ? dto.getWorkDays() : "";
+                            java.util.List<String> selectedDays = java.util.Arrays.asList(workDaysStr.split(","));
+                        %>
+                        <% for (String d : allDays) { %>
+                        <div class="form-check form-check-inline m-0">
+                            <input class="form-check-input day-check-edit" type="checkbox"
+                                id="editDay<%=d%>" value="<%=d%>"
+                                <%=selectedDays.contains(d.trim()) ? "checked" : ""%>>
+                            <label class="form-check-label btn btn-sm px-2 py-1 fw-bold <%=selectedDays.contains(d.trim()) ? "btn-primary" : "btn-outline-primary"%>"
+                                for="editDay<%=d%>"><%=d%></label>
+                        </div>
+                        <% } %>
+                    </div>
+                    <input type="hidden" name="workDays" id="workDaysEditHidden" value="<%=workDaysStr%>">
                 </div>
             </div>
             <div class="mt-4 p-4 rounded-3 border bg-light-subtle">
@@ -78,16 +100,36 @@
     </div>
 
     <% if ("A".equals(userRole)) { %>
-    <div class="card custom-card p-4 mb-4 shadow-sm border-start border-4 border-primary">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h5 class="fw-bold mb-1 text-primary"><i class="fa-solid fa-store me-2"></i>매장 관리</h5>
-                <small class="text-muted">새 매장 생성 신청 및 소속 매장 관리</small>
-            </div>
-            <a href="StoreManage" class="btn btn-primary fw-bold px-4">
-                <i class="fa-solid fa-arrow-right me-1"></i>매장 관리 페이지로
-            </a>
+    <div class="card custom-card p-4 mb-4 shadow-sm admin-register-box">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0 text-primary"><i class="fa-solid fa-plus-circle me-2"></i>새로운 매장 등록</h5>
+            <span class="badge bg-primary">Admin Only</span>
         </div>
+        <p class="text-muted small">새로운 매장 코드와 <strong>제작사(AlbaPass)에서 발급받은 라이선스 코드</strong>를 입력하세요.</p>
+        
+        <form id="adminStoreRegForm">
+            <div class="row g-2">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white small fw-bold text-primary">ID</span>
+                        <input type="text" id="newStoreId" class="form-control fw-bold" placeholder="매장 코드" required>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white small fw-bold text-danger">CODE</span>
+                        <input type="password" id="adminCode" class="form-control" placeholder="라이선스 코드" required>
+                        <button class="btn btn-outline-secondary border-start-0 bg-white" type="button" onclick="toggleAdminCodeVisibility()">
+                            <i class="fa-solid fa-eye text-muted" id="adminCodeIcon"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" onclick="registerNewStore()" class="btn btn-primary fw-bold w-100 h-100">등록</button>
+                </div>
+            </div>
+        </form>
+        <small class="text-muted mt-2 d-block">유효한 라이선스 코드가 없는 경우 고객센터로 문의해 주세요.</small>
     </div>
     <% } %>
 
@@ -124,6 +166,30 @@
 <%@ include file="footer.jsp" %>
 
 <script>
+    // 근무 요일 체크박스 연동
+    document.querySelectorAll('.day-check-edit').forEach(function(chk) {
+        chk.addEventListener('change', function() {
+            const checked = Array.from(document.querySelectorAll('.day-check-edit:checked'))
+                                 .map(c => c.value);
+            document.getElementById('workDaysEditHidden').value = checked.join(',');
+            const label = document.querySelector('label[for="' + chk.id + '"]');
+            if (chk.checked) {
+                label.classList.replace('btn-outline-primary', 'btn-primary');
+            } else {
+                label.classList.replace('btn-primary', 'btn-outline-primary');
+            }
+        });
+    });
+    function autoHyphen(input) {
+        let val = input.value.replace(/[^0-9]/g, '');
+        if (val.length <= 3) {
+            input.value = val;
+        } else if (val.length <= 7) {
+            input.value = val.slice(0, 3) + '-' + val.slice(3);
+        } else {
+            input.value = val.slice(0, 3) + '-' + val.slice(3, 7) + '-' + val.slice(7, 11);
+        }
+    }
     // 비밀번호 토글 (기본 정보용)
     function toggleNewPw() {
         const pwInput = document.getElementById("new_pw");
@@ -131,6 +197,51 @@
         pwInput.type = (pwInput.type === "password") ? "text" : "password";
         icon.classList.toggle("fa-eye");
         icon.classList.toggle("fa-eye-slash");
+    }
+
+    // 🚨 라이선스 코드 토글 (관리자 전용)
+    function toggleAdminCodeVisibility() {
+        const codeInput = document.getElementById("adminCode");
+        const icon = document.getElementById("adminCodeIcon");
+        if (codeInput.type === "password") {
+            codeInput.type = "text";
+            icon.classList.replace("fa-eye", "fa-eye-slash");
+        } else {
+            codeInput.type = "password";
+            icon.classList.replace("fa-eye-slash", "fa-eye");
+        }
+    }
+
+    // 관리자 새 매장 등록 (AdminStoreRegister 호출)
+    async function registerNewStore() {
+        const storeId = document.getElementById('newStoreId').value.trim();
+        const adminCode = document.getElementById('adminCode').value.trim();
+        
+        if(!storeId || !adminCode) return alert('매장 ID와 라이선스 코드를 모두 입력해주세요.');
+        if(!confirm("[" + storeId + "] 매장을 새로 등록하시겠습니까?")) return;
+
+        const params = new URLSearchParams();
+        params.append('newStoreId', storeId);
+        params.append('adminCode', adminCode);
+
+        try {
+            const res = await fetch('AdminStoreRegister', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params
+            });
+            const data = await res.json();
+            
+            if(data.status === 'success') {
+                alert(data.message);
+                location.href = 'default.jsp';
+            } else {
+                alert("등록 실패: " + data.message);
+            }
+        } catch (error) {
+            alert("서버 통신 오류가 발생했습니다.");
+            console.error(error);
+        }
     }
 
     // 기본 정보 수정 (MyPageUpdate 호출)

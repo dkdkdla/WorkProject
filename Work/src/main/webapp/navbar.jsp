@@ -43,9 +43,16 @@
                     <strong><%=navUserName%></strong>님
                 </div>
 
+                <% if (!"SA".equals(navUserRole)) { %>
+                <% if (navUserStoreId != null && !navUserStoreId.isEmpty()) { %>
+                <span class="text-white-50 small me-2 d-none d-md-block">
+                    <i class="fa-solid fa-store me-1"></i><%=navUserStoreId%>
+                </span>
+                <% } %>
                 <button class="btn btn-sm btn-outline-light me-2" data-bs-toggle="modal" data-bs-target="#changeStoreModal">
                     <i class="fa-solid fa-rotate"></i> 매장변경
                 </button>
+                <% } %>
 
                 <form action="<%=request.getContextPath()%>/Logout" method="post" class="m-0">
                     <button type="submit" class="btn btn-danger btn-sm">로그아웃</button>

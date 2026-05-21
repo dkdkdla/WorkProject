@@ -7,16 +7,24 @@ import java.util.*;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
+import javax.servlet.http.HttpSession;
 
 @WebServlet("/GetSalaryInfo")
 public class GetSalaryInfo extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // 1. 설정 및 파라미터 수신
         request.setCharacterEncoding("UTF-8");
         response.setContentType("application/json; charset=UTF-8");
         PrintWriter out = response.getWriter();
+
+        // 세션 체크
+        HttpSession session = request.getSession(false);
+        String role = session != null ? (String)session.getAttribute("userRole") : null;
+        if (role == null || !"A".equals(role.trim())) {
+            out.print("{\"status\":\"fail\", \"message\":\"권한이 없습니다.\"}");
+            return;
+        }
         
         String storeId = request.getParameter("storeId");
         String year = request.getParameter("year");

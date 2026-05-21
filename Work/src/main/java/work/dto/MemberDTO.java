@@ -20,6 +20,8 @@ public class MemberDTO {
 	private String storeId;
 	private String empName;
 	private String birth;
+	private String workDays;
+	private int roleId;
 	
 	public String getId() {
 		return id;
@@ -74,5 +76,17 @@ public class MemberDTO {
 	}
 	public void setBirth(String birth) {
 		this.birth = birth;
+	}
+	public String getWorkDays() {
+		return workDays;
+	}
+	public void setWorkDays(String workDays) {
+		this.workDays = workDays;
+	}
+	public int getRoleId() {
+		return roleId;
+	}
+	public void setRoleId(int roleId) {
+		this.roleId = roleId;
 	}
 }

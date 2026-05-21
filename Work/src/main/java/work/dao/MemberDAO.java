@@ -340,7 +340,6 @@ public class MemberDAO {
             return pstmt.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
-
     
     private void closeAll(Connection conn, PreparedStatement pstmt, ResultSet rs) {
         if(rs != null) try{ rs.close(); } catch(Exception e){}
@@ -353,10 +352,10 @@ public class MemberDAO {
         ArrayList<MemberDTO> list = new ArrayList<>();
         
         // 1. tb_my_stores를 사용하고 모든 컬럼을 가져옵니다.
-        String sql = "SELECT m.mem_id, m.mem_name, m.mem_phone, m.hourly_wage, m.mem_role " +
+        String sql = "SELECT m.mem_id, m.mem_name, m.mem_phone, m.hourly_wage, m.mem_role, m.work_days, ISNULL(m.role_id, 0) as role_id " +
                      "FROM tb_member m " +
                      "JOIN tb_my_stores ms ON m.mem_id = ms.mem_id " +
-                     "WHERE ms.store_id = ? " +
+                     "WHERE ms.store_id = ? AND ms.join_status = 'ACTIVE' " +
                      "ORDER BY m.mem_name";
 
         try (Connection conn = DBConn.getConnection();
@@ -368,9 +367,11 @@ public class MemberDAO {
                     MemberDTO dto = new MemberDTO();
                     dto.setId(rs.getString("mem_id"));
                     dto.setName(rs.getString("mem_name"));
-                    dto.setPhone(rs.getString("mem_phone")); // 연락처 매핑
-                    dto.setHourlyWage(rs.getInt("hourly_wage")); // 시급 매핑
-                    dto.setRole(rs.getString("mem_role") != null ? rs.getString("mem_role").trim() : null); // 권한 매핑
+                    dto.setPhone(rs.getString("mem_phone"));
+                    dto.setHourlyWage(rs.getInt("hourly_wage"));
+                    dto.setRole(rs.getString("mem_role") != null ? rs.getString("mem_role").trim() : null);
+                    dto.setWorkDays(rs.getString("work_days") != null ? rs.getString("work_days") : "");
+                    dto.setRoleId(rs.getInt("role_id"));
                     list.add(dto);
                 }
             }
@@ -469,7 +470,8 @@ public class MemberDAO {
 
             // 1. 회원 정보 저장 (tb_member) - 점장은 PENDING, 직원은 ACTIVE
             String memStatus = "A".equals(dto.getRole()) ? "PENDING" : "ACTIVE";
-            String sql1 = "INSERT INTO tb_member (mem_id, mem_pw, mem_name, mem_phone, mem_role, hourly_wage, store_id, mem_status, mem_birth) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String memStatus2 = "A".equals(dto.getRole()) ? "PENDING" : "ACTIVE";
+            String sql1 = "INSERT INTO tb_member (mem_id, mem_pw, mem_name, mem_phone, mem_role, hourly_wage, store_id, mem_status, mem_birth, work_days, role_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             pstmt = conn.prepareStatement(sql1);
             pstmt.setString(1, dto.getId());
             pstmt.setString(2, dto.getPw());
@@ -480,6 +482,8 @@ public class MemberDAO {
             pstmt.setString(7, storeId);
             pstmt.setString(8, memStatus);
             pstmt.setString(9, dto.getBirth());
+            pstmt.setString(10, dto.getWorkDays());
+            if (dto.getRoleId() > 0) { pstmt.setInt(11, dto.getRoleId()); } else { pstmt.setNull(11, java.sql.Types.INTEGER); }
             pstmt.executeUpdate();
             pstmt.close();
 
@@ -621,6 +625,35 @@ public class MemberDAO {
             }
         } catch (Exception e) { e.printStackTrace(); }
         return list;
+    }
+
+    // 오늘 출근한 직원 수 조회
+    public int getTodayAttendCount(String storeId, String today) {
+        if (storeId == null || storeId.isEmpty()) return 0;
+        String sql = "SELECT COUNT(DISTINCT mem_id) FROM tb_attendance " +
+                     "WHERE store_id = ? AND CONVERT(DATE, work_date) = ? AND type = 'IN'";
+        try (Connection conn = DBConn.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, storeId);
+            pstmt.setString(2, today);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return 0;
+    }
+
+    // 역할 ID로 시급 조회
+    public int getRoleWage(int roleId) {
+        String sql = "SELECT hourly_wage FROM tb_role WHERE role_id = ?";
+        try (Connection conn = DBConn.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, roleId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) return rs.getInt("hourly_wage");
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return 0;
     }
 
     // 매장 생성 신청 (PENDING 상태로 저장)

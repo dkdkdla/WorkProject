@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="@android:color/white">
+
+    <!-- 제목 -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="매장 검색"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#212121"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- 검색 입력창 -->
+    <EditText
+        android:id="@+id/etSheetSearch"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:hint="매장 이름 또는 코드 입력"
+        android:paddingHorizontal="16dp"
+        android:background="@drawable/bg_button_navy"
+        android:backgroundTint="#F5F5F5"
+        android:layout_marginBottom="12dp"
+        android:inputType="text"
+        android:imeOptions="actionSearch"/>
+
+    <!-- 검색 결과 없음 안내 -->
+    <TextView
+        android:id="@+id/tvSheetEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="매장 이름이나 코드를 입력하여 검색하세요."
+        android:textColor="#9E9E9E"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:paddingVertical="30dp"
+        android:visibility="visible"/>
+
+    <!-- 검색 결과 목록 -->
+    <ListView
+        android:id="@+id/lvSheetResult"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:visibility="gone"
+        android:divider="@android:color/darker_gray"
+        android:dividerHeight="0.5dp"/>
+
+</LinearLayout>

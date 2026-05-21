@@ -127,8 +127,8 @@ async function loadBoardDetail() {
             
             if (currentUserId === data.writer) {
                 htmlTemplate += 
-                    '<a href="board_edit.jsp?id=' + postId + '&storeId=' + userStoreId + '" class="btn btn-outline-primary px-4 fw-bold">수정하기</a>' +
-                    '<a href="board_delete.jsp?id=' + postId + '&storeId=' + userStoreId + '" class="btn btn-outline-danger px-4 fw-bold" onclick="return confirm(\'정말로 삭제하시겠습니까?\');">삭제하기</a>';
+                    '<a href="BoardEdit?id=' + postId + '&storeId=' + userStoreId + '" class="btn btn-outline-primary px-4 fw-bold">수정하기</a>' +
+                    '<a href="BoardDelete?id=' + postId + '&storeId=' + userStoreId + '" class="btn btn-outline-danger px-4 fw-bold" onclick="return confirm(\'정말로 삭제하시겠습니까?\');">삭제하기</a>';
             }
             
             htmlTemplate += 

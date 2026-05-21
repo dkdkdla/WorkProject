@@ -1,65 +1,122 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    android:padding="30dp"
+    android:padding="32dp"
     android:background="@color/gray_bg">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <!-- 로고 영역 -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="WORK\nMANAGER"
-        android:textSize="40sp"
-        android:textStyle="bold"
-        android:textColor="@color/navy_primary"
+        android:orientation="vertical"
         android:gravity="center"
-        android:layout_marginBottom="50dp"/>
+        android:layout_marginBottom="40dp">
 
-    <EditText
-        android:id="@+id/etId"
-        android:layout_width="match_parent"
-        android:layout_height="55dp"
-        android:hint="아이디를 입력하세요"
-        android:background="@drawable/bg_button_navy"
-        android:backgroundTint="#FFFFFF"
-        android:paddingHorizontal="20dp"
-        android:elevation="3dp"
-        android:layout_marginBottom="15dp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Alba"
+            android:textSize="42sp"
+            android:textStyle="bold"
+            android:textColor="@color/navy_primary"
+            android:letterSpacing="0.05"/>
 
-    <EditText
-        android:id="@+id/etPw"
-        android:layout_width="match_parent"
-        android:layout_height="55dp"
-        android:hint="비밀번호를 입력하세요"
-        android:inputType="textPassword"
-        android:background="@drawable/bg_button_navy"
-        android:backgroundTint="#FFFFFF"
-        android:paddingHorizontal="20dp"
-        android:elevation="3dp"
-        android:layout_marginBottom="30dp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pass"
+            android:textSize="42sp"
+            android:textStyle="bold"
+            android:textColor="@color/orange_accent"
+            android:layout_marginTop="-10dp"
+            android:letterSpacing="0.05"/>
 
-    <Button
-        android:id="@+id/btnLogin"
-        android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:text="로그인"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="@color/white"
-        android:background="@drawable/bg_button_navy"
-        android:elevation="5dp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="알바 근태 관리 시스템"
+            android:textSize="13sp"
+            android:textColor="@color/gray_text"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
 
-    <Button
-        android:id="@+id/btnGoRegister"
+    <!-- 카드 영역 -->
+    <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:text="계정이 없으신가요? 회원가입"
-        android:textColor="@color/gray_text"
-        android:backgroundTint="#00FFFFFF"
-        android:stateListAnimator="@null"
-        style="?android:attr/borderlessButtonStyle"
-        android:layout_marginTop="10dp"/>
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="@color/white">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="28dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="로그인"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:textColor="@color/navy_primary"
+                android:layout_marginBottom="24dp"/>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                style="@style/Widget.App.TextInput"
+                android:hint="아이디"
+                android:layout_marginBottom="16dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etId"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                style="@style/Widget.App.TextInput"
+                android:hint="비밀번호"
+                app:passwordToggleEnabled="true"
+                android:layout_marginBottom="28dp">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etPw"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPassword"/>
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <Button
+                android:id="@+id/btnLogin"
+                android:layout_width="match_parent"
+                android:layout_height="54dp"
+                android:text="로그인"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:backgroundTint="@color/navy_primary"
+                app:cornerRadius="12dp"
+                android:layout_marginBottom="12dp"/>
+
+            <Button
+                android:id="@+id/btnGoRegister"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="계정이 없으신가요? 회원가입"
+                android:textSize="14sp"
+                android:textColor="@color/navy_primary"
+                style="@style/Widget.Material3.Button.TextButton"/>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
 </LinearLayout>

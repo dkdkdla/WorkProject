@@ -143,6 +143,17 @@ async function handleAction(targetId, type, mode) {
             const rowId = (type === 'store' ? 'store-row-' : 'member-row-') + targetId;
             const row = document.getElementById(rowId);
             if (row) row.remove();
+
+            // 뱃지 카운트 자동 갱신
+            const remainRows = type === 'store'
+                ? document.querySelectorAll('[id^="store-row-"]').length
+                : document.querySelectorAll('[id^="member-row-"]').length;
+
+            const allBadges = document.querySelectorAll('.badge');
+            allBadges.forEach(b => {
+                if (type === 'member' && b.classList.contains('bg-warning')) b.innerText = remainRows;
+                if (type === 'store'  && b.classList.contains('bg-primary'))  b.innerText = remainRows;
+            });
         }
     } catch (e) {
         alert('통신 오류가 발생했습니다.');

@@ -80,53 +80,33 @@
             <i class="fa-solid fa-house me-1"></i> 메인화면
         </a>
     </div>
+
+    <%-- 페이지네이션 --%>
+    <div id="pagination" class="d-flex justify-content-center mt-4 gap-1"></div>
 </div>
 
 <%@ include file="footer.jsp" %>
 
 <script>
+const PAGE_SIZE = 10;
+let allData   = [];
+let curPage   = 1;
+
 document.addEventListener('DOMContentLoaded', function() {
     loadBoardList();
 });
 
 async function loadBoardList() {
     const storeId = '<%=storeId%>';
-    const tbody = document.getElementById('boardListBody');
+    const tbody   = document.getElementById('boardListBody');
 
     try {
-        // 방금 만든 자바 서블릿(BoardList)으로 데이터 요청
         const response = await fetch("BoardList?storeId=" + storeId + "&_nocache=" + new Date().getTime());
-        const result = await response.json();
+        const result   = await response.json();
 
         if (result.status === 'success') {
-            const data = result.data;
-            
-            if (data.length === 0) {
-                // 데이터가 없을 때의 UI
-                tbody.innerHTML = 
-                    '<tr>' +
-                        '<td colspan="4" class="py-5 text-center">' +
-                            '<i class="fa-solid fa-folder-open fa-3x text-light mb-3"></i>' +
-                            '<p class="text-muted mb-0">작성된 게시글이 없습니다.<br>첫 번째 소통의 주인공이 되어보세요!</p>' +
-                        '</td>' +
-                    '</tr>';
-            } else {
-                // 데이터가 있을 때 목록 그리기 (톰캣 에러 방지를 위해 + 기호 사용)
-                let htmlTemplate = '';
-                for (let i = 0; i < data.length; i++) {
-                    let item = data[i];
-                    htmlTemplate += 
-                        '<tr onclick="location.href=\'board_view.jsp?id=' + item.id + '\'" style="cursor:pointer;">' +
-                            '<td class="text-secondary">' + item.id + '</td>' +
-                            '<td class="text-start ps-4 fw-bold text-dark">' + item.title + '</td>' +
-                            '<td>' +
-                                '<span class="badge bg-light text-dark border fw-normal">' + item.writer + '</span>' +
-                            '</td>' +
-                            '<td class="small text-muted">' + item.date + '</td>' +
-                        '</tr>';
-                }
-                tbody.innerHTML = htmlTemplate;
-            }
+            allData = result.data;
+            renderPage(1);
         } else {
             tbody.innerHTML = "<tr><td colspan='4' class='py-5 text-center text-danger'>데이터를 불러오지 못했습니다.<br>" + result.message + "</td></tr>";
         }
@@ -134,6 +114,73 @@ async function loadBoardList() {
         console.error('Fetch Error:', error);
         tbody.innerHTML = "<tr><td colspan='4' class='py-5 text-center text-danger'>서버 통신 중 오류가 발생했습니다.</td></tr>";
     }
+}
+
+function renderPage(page) {
+    curPage = page;
+    const tbody      = document.getElementById('boardListBody');
+    const totalCount = allData.length;
+    const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+    const start = (page - 1) * PAGE_SIZE;
+    const end   = Math.min(start + PAGE_SIZE, totalCount);
+    const pageData = allData.slice(start, end);
+
+    if (totalCount === 0) {
+        tbody.innerHTML =
+            '<tr>' +
+                '<td colspan="4" class="py-5 text-center">' +
+                    '<i class="fa-solid fa-folder-open fa-3x text-light mb-3"></i>' +
+                    '<p class="text-muted mb-0">작성된 게시글이 없습니다.<br>첫 번째 소통의 주인공이 되어보세요!</p>' +
+                '</td>' +
+            '</tr>';
+        document.getElementById('pagination').innerHTML = '';
+        return;
+    }
+
+    // 목록 렌더링 (전체 기준 순번)
+    let html = '';
+    for (let i = 0; i < pageData.length; i++) {
+        let item   = pageData[i];
+        let rowNum = totalCount - (start + i); // 전체 기준 순번
+        html +=
+            '<tr onclick="location.href=\'board_view.jsp?id=' + item.id + '\'" style="cursor:pointer;">' +
+                '<td class="text-secondary">' + rowNum + '</td>' +
+                '<td class="text-start ps-4 fw-bold text-dark">' + item.title + '</td>' +
+                '<td>' +
+                    '<span class="badge bg-light text-dark border fw-normal">' + item.writer + '</span>' +
+                '</td>' +
+                '<td class="small text-muted">' + item.date + '</td>' +
+            '</tr>';
+    }
+    tbody.innerHTML = html;
+
+    // 페이지네이션 버튼 렌더링
+    let pagHtml = '';
+
+    // 이전 버튼
+    pagHtml += '<button class="btn btn-sm btn-outline-secondary px-3" ' +
+        (page <= 1 ? 'disabled' : 'onclick="renderPage(' + (page - 1) + ')"') + '>' +
+        '<i class="fa-solid fa-chevron-left"></i></button>';
+
+    // 페이지 번호 (최대 5개 표시)
+    const startPage = Math.max(1, page - 2);
+    const endPage   = Math.min(totalPages, startPage + 4);
+
+    for (let p = startPage; p <= endPage; p++) {
+        if (p === page) {
+            pagHtml += '<button class="btn btn-sm btn-primary px-3 fw-bold">' + p + '</button>';
+        } else {
+            pagHtml += '<button class="btn btn-sm btn-outline-secondary px-3" onclick="renderPage(' + p + ')">' + p + '</button>';
+        }
+    }
+
+    // 다음 버튼
+    pagHtml += '<button class="btn btn-sm btn-outline-secondary px-3" ' +
+        (page >= totalPages ? 'disabled' : 'onclick="renderPage(' + (page + 1) + ')"') + '>' +
+        '<i class="fa-solid fa-chevron-right"></i></button>';
+
+    document.getElementById('pagination').innerHTML = pagHtml;
 }
 </script>
 

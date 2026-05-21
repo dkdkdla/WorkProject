@@ -3,11 +3,18 @@
 <%@ page import="work.dto.MemberDTO" %>
 <%@ page import="java.util.*" %>
 <%@ page import="java.text.SimpleDateFormat" %>
-
 <%
+    // 세션 체크
+    String _userId = (String) session.getAttribute("userId");
+    String _role   = (String) session.getAttribute("userRole");
+    if (_userId == null || !"A".equals(_role != null ? _role.trim() : "")) {
+        response.sendRedirect("login.jsp");
+        return;
+    }
+
     // 1. 서블릿(AdminHistory)으로부터 데이터 수신
-    ArrayList<AttendanceDTO> fullList = (ArrayList<AttendanceDTO>)request.getAttribute("fullList");
-    ArrayList<MemberDTO> memberList = (ArrayList<MemberDTO>)request.getAttribute("memberList");
+    ArrayList<AttendanceDTO> fullList   = (ArrayList<AttendanceDTO>) request.getAttribute("fullList");
+    ArrayList<MemberDTO>     memberList = (ArrayList<MemberDTO>)     request.getAttribute("memberList");
 
     // 🚨 팩트체크: 만약 서블릿을 거치지 않고 직접 JSP에 접속했다면 서블릿으로 강제 이동시킵니다.
     if (fullList == null || memberList == null) {

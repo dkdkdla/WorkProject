@@ -2,6 +2,14 @@
 <%@ page import="work.dao.MemberDAO" %>
 <%@ page import="work.dto.MemberDTO" %>
 <%@ page import="java.util.ArrayList" %>
+<%
+    // 🚨 전체관리자(SA)만 접근 가능
+    String _role = (String) session.getAttribute("userRole");
+    if (_role == null || !"SA".equals(_role.trim())) {
+        response.sendError(HttpServletResponse.SC_NOT_FOUND); // 404로 숨김 처리
+        return;
+    }
+%>
 <!DOCTYPE html>
 <html>
 <head>

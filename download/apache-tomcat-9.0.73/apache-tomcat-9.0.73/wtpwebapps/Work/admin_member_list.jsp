@@ -53,32 +53,60 @@
                     <tr>
                         <th class="ps-4">이름</th>
                         <th>전화번호</th>
-                        <th>시급</th>
+                        <th>역할 / 시급</th>
+                        <th>근무 요일</th>
                         <th class="text-center">관리</th>
                     </tr>
                 </thead>
                 <tbody>
                     <% if (list.isEmpty()) { %>
-                        <tr><td colspan='4' class='text-center text-muted py-5'>현재 등록된 직원이 없습니다.</td></tr>
+                        <tr><td colspan='5' class='text-center text-muted py-5'>현재 등록된 직원이 없습니다.</td></tr>
                     <% } else {
                         for (MemberDTO m : list) { 
                             boolean isSelf = m.getId().equals(loggedInId);
                             boolean isAdmin = "A".equals(m.getRole());
                     %>
-                        <tr <%= isSelf ? "class='table-info-subtle'" : "" %>>
+                        <tr <%= isSelf ? "class='table-info-subtle'" : (m.getRoleId() == 0 && !"A".equals(m.getRole()) ? "class='table-warning'" : "") %>>
                             <td class="ps-4">
                                 <span class="fw-bold text-dark"><%=m.getName()%></span>
                                 <% if (isAdmin) { %>
 								    <span class="badge bg-primary ms-1" style="font-size: 0.7rem;">점장</span>
 								<% } else { %>
 								    <span class="badge bg-warning text-dark ms-1" style="font-size: 0.7rem;">직원</span>
+                                <% } %>
+                                <% if (!isAdmin && m.getRoleId() == 0) { %>
+                                <span class="badge bg-danger ms-1" style="font-size:0.7rem;">역할 미지정</span>
+                                <% } %>
 								<% } %>
                                 <% if (isSelf) { %>
                                     <span class="badge bg-dark text-white ms-1" style="font-size: 0.7rem;">나</span>
                                 <% } %>
                             </td>
                             <td class="text-muted"><%=m.getPhone()%></td>
-                            <td class="fw-bold text-primary"><%=String.format("%,d", m.getHourlyWage())%>원</td>
+                            <td style="min-width:200px;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <select class="form-select form-select-sm role-select"
+                                        id="roleSelect-<%=m.getId()%>"
+                                        onchange="assignRole('<%=m.getId()%>', this)"
+                                        data-current="<%=m.getRoleId()%>"
+                                        style="max-width:160px;">
+                                        <option value="0">-- 역할 미지정 --</option>
+                                    </select>
+                                    <small class="text-primary fw-bold text-nowrap" id="wage-<%=m.getId()%>">
+                                        <%=m.getHourlyWage() > 0 ? String.format("%,d", m.getHourlyWage()) + "원" : "-"%>
+                                    </small>
+                                </div>
+                            </td>
+                            <td>
+                                <% if (m.getWorkDays() != null && !m.getWorkDays().isEmpty()) {
+                                    String[] days = m.getWorkDays().split(",");
+                                    for (String day : days) { %>
+                                        <span class="badge bg-primary me-1"><%=day.trim()%></span>
+                                    <% } %>
+                                <% } else { %>
+                                    <span class="text-muted small">미정</span>
+                                <% } %>
+                            </td>
                             <td class="text-center">
                                 <a href="AdminMemberUpdate?id=<%=m.getId()%>" class="btn btn-sm btn-warning text-white fw-bold me-1">
                                     <i class="fa-solid fa-pen"></i> 수정
@@ -104,6 +132,76 @@
 </div>
 
 <script>
+// 페이지 로드 시 역할 목록 로드
+document.addEventListener('DOMContentLoaded', function() {
+    loadRoleOptions();
+});
+
+// 현재 매장의 역할 목록 로드 후 모든 드롭다운에 적용
+async function loadRoleOptions() {
+    try {
+        const storeId = '<%=(String)session.getAttribute("userStoreId")%>';
+        const res  = await fetch('GetRoles?storeId=' + encodeURIComponent(storeId));
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            document.querySelectorAll('.role-select').forEach(function(select) {
+                // 기존 옵션 유지하고 역할 추가
+                const currentVal = select.dataset.current || '0';
+                data.list.forEach(role => {
+                    const opt = document.createElement('option');
+                    opt.value = role.roleId;
+                    opt.text  = role.roleName;
+                    opt.dataset.wage = role.wage;
+                    if (String(role.roleId) === String(currentVal)) opt.selected = true;
+                    select.appendChild(opt);
+                });
+            });
+        }
+    } catch (e) { console.error(e); }
+}
+
+// 역할 지정
+async function assignRole(memId, select) {
+    const roleId = select.value;
+    const roleName = select.options[select.selectedIndex].text;
+
+    if (!confirm('"' + roleName + '" 역할을 지정하시겠습니까?')) {
+        // 취소 시 원래 값으로 복원
+        select.value = select.dataset.current || '0';
+        return;
+    }
+
+    const params = new URLSearchParams();
+    params.append('memId', memId);
+    params.append('roleId', roleId);
+
+    try {
+        const res  = await fetch('RoleAssign', { method: 'POST', body: params });
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            select.dataset.current = roleId;
+            // 시급 업데이트
+            const wageEl = document.getElementById('wage-' + memId);
+            if (wageEl) {
+                wageEl.innerText = data.wage > 0 ? data.wage.toLocaleString() + '원' : '-';
+            }
+            // 성공 토스트 (alert 대신 조용히)
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-success ms-1';
+            badge.innerText = '저장됨';
+            wageEl.after(badge);
+            setTimeout(() => badge.remove(), 2000);
+        } else {
+            alert(data.message);
+            select.value = select.dataset.current || '0';
+        }
+    } catch (e) {
+        alert('통신 오류가 발생했습니다.');
+        select.value = select.dataset.current || '0';
+    }
+}
     function filterTable() {
         let input = document.getElementById("searchInput");
         let filter = input.value.toUpperCase();

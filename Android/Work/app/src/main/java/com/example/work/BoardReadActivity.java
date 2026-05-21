@@ -39,8 +39,8 @@ public class BoardReadActivity extends AppCompatActivity {
 
     String boardSeq;
 
-    String viewUrl = "http://10.0.2.2:8080/Work/api_board_view.jsp";
-    String fileBaseUrl = "http://10.0.2.2:8080/Work/upload/";
+    String viewUrl = AppConfig.API_BOARD_VIEW;
+    String fileBaseUrl = AppConfig.API_UPLOAD_PATH;
 
     final int REQUEST_CODE_STORAGE = 1000;
 

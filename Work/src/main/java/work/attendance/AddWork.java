@@ -17,10 +17,17 @@ public class AddWork extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // 1. 요청 및 응답 설정
         request.setCharacterEncoding("UTF-8");
         response.setContentType("application/json; charset=UTF-8");
         PrintWriter out = response.getWriter();
+
+        // 세션 체크
+        javax.servlet.http.HttpSession session = request.getSession(false);
+        String role = session != null ? (String)session.getAttribute("userRole") : null;
+        if (role == null || !"A".equals(role.trim())) {
+            out.print("{\"status\":\"fail\", \"message\":\"권한이 없습니다.\"}");
+            return;
+        }
 
         // 2. 파라미터 수신
         String id = request.getParameter("id");       

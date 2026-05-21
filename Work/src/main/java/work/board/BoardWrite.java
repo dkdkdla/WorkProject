@@ -23,10 +23,17 @@ public class BoardWrite extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // 인코딩 및 JSON 응답 설정
         request.setCharacterEncoding("UTF-8");
         response.setContentType("application/json; charset=UTF-8");
         PrintWriter out = response.getWriter();
+
+        // 세션 체크
+        javax.servlet.http.HttpSession session = request.getSession(false);
+        String userId = session != null ? (String)session.getAttribute("userId") : null;
+        if (userId == null) {
+            out.print("{\"status\":\"fail\", \"message\":\"로그인이 필요합니다.\"}");
+            return;
+        }
 
         // 업로드 경로 및 폴더 생성 로직
         String savePath = request.getServletContext().getRealPath("upload");

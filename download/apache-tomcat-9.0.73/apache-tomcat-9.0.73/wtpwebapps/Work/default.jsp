@@ -44,9 +44,11 @@
 
     // 점장인 경우 소속 신청 대기 건수 조회
     int pendingJoinCount = 0;
+    int todayAttendCount = 0;
     if ("A".equals(userRole) && userId != null) {
         MemberDAO dao = new MemberDAO();
         pendingJoinCount = dao.getPendingJoinsByOwner(userId).size();
+        todayAttendCount = dao.getTodayAttendCount((String)session.getAttribute("userStoreId"), today);
     }
 %>
 
@@ -111,6 +113,11 @@
                     <i class="fa-solid fa-store me-2 text-primary"></i>
                     <%= (userStoreId != null && !userStoreId.isEmpty()) ? userStoreId : "매장을 선택해주세요" %>
                 </h5>
+                <% if ("A".equals(userRole) && todayAttendCount > 0) { %>
+                <small class="text-success fw-bold mt-1 d-block">
+                    <i class="fa-solid fa-circle-check me-1"></i>오늘 출근 직원 <%=todayAttendCount%>명
+                </small>
+                <% } %>
             </div>
             <div class="text-end d-none d-sm-block">
                 <small class="text-muted">오늘 날짜</small>
@@ -156,6 +163,12 @@
                                     <%=pendingJoinCount%>
                                 </span>
                                 <% } %>
+                            </a>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <a href="RoleManage" class="card custom-card action-card p-3 h-100 text-center shadow-sm text-decoration-none">
+                                <div class="icon-box bg-warning-subtle text-warning mx-auto mb-2"><i class="fa-solid fa-tags fa-lg"></i></div>
+                                <span class="fw-bold text-dark small">역할 관리</span>
                             </a>
                         </div>
                     </div>

@@ -89,7 +89,14 @@
 
                 <div class="mb-3">
                     <label class="form-label">아이디 <span class="required-mark">*</span></label>
-                    <input type="text" name="id" class="form-control" placeholder="아이디 입력" required>
+                    <div class="input-group">
+                        <input type="text" name="id" id="inputId" class="form-control" placeholder="아이디 입력" required
+                            oninput="resetIdCheck()">
+                        <button type="button" class="btn btn-outline-secondary fw-bold" onclick="checkDuplicateId()">
+                            중복확인
+                        </button>
+                    </div>
+                    <small id="idCheckMsg" class="hint-text"></small>
                 </div>
 
                 <div class="row g-3 mb-3">
@@ -113,7 +120,8 @@
                     </div>
                     <div class="col-6">
                         <label class="form-label">전화번호 <span class="required-mark">*</span></label>
-                        <input type="text" name="phone" class="form-control" placeholder="010-0000-0000" required>
+                        <input type="text" name="phone" class="form-control" placeholder="010-0000-0000"
+                            maxlength="13" oninput="autoHyphen(this)" required>
                     </div>
                 </div>
 
@@ -123,20 +131,42 @@
                     <small class="text-muted hint-text">실제 생년월일을 입력해주세요.</small>
                 </div>
 
-                <div class="row g-3 mb-4">
-                    <div class="col-6" id="storeWrap">
-                        <label class="form-label" id="storeLabel">소속 매장 ID <span class="text-muted">(선택)</span></label>
-                        <input type="text" name="storeId" class="form-control" placeholder="매장코드 입력 (선택)">
-                        <small id="storeHint" class="text-muted hint-text">없으면 나중에 매장 관리에서 신청 가능합니다.</small>
+                <div class="mb-4" id="workDaysWrap">
+                    <label class="form-label">근무 가능 요일 <span class="text-muted">(선택)</span></label>
+                    <div class="d-flex flex-wrap gap-2 mt-1">
+                        <% String[] days = {"월", "화", "수", "목", "금", "토", "일"}; %>
+                        <% for (String day : days) { %>
+                        <div class="form-check form-check-inline m-0">
+                            <input class="form-check-input day-check" type="checkbox"
+                                id="day<%=day%>" value="<%=day%>">
+                            <label class="form-check-label btn btn-sm btn-outline-primary px-3 py-2 fw-bold"
+                                for="day<%=day%>"><%=day%></label>
+                        </div>
+                        <% } %>
                     </div>
-                    <div class="col-6" id="wageWrap">
-                        <label class="form-label text-muted">시급 (숫자만)</label>
-                        <input type="number" name="wage" id="wage" class="form-control" 
-                               placeholder="예: 9860" min="0" step="10"
-                               oninput="this.value = this.value.replace(/[^0-9]/g, '');">
-                        <small class="text-muted hint-text">직원일 경우에만 해당</small>
-                    </div>
+                    <input type="hidden" name="workDays" id="workDaysHidden">
+                    <small class="text-muted hint-text mt-1 d-block">선택하지 않으면 협의 후 결정으로 처리됩니다.</small>
                 </div>
+
+                <div class="mb-4" id="storeWrap">
+                    <label class="form-label" id="storeLabel">소속 매장 <span class="text-muted">(선택, 여러 개 가능)</span></label>
+
+                    <%-- 선택된 매장 태그 목록 --%>
+                    <div id="selectedStoreTags" class="d-flex flex-wrap gap-2 mb-2" style="min-height:32px;"></div>
+
+                    <div class="input-group">
+                        <input type="text" id="storeSearchInput" class="form-control bg-white"
+                            placeholder="매장을 검색해서 선택하세요" readonly>
+                        <button class="btn btn-outline-primary fw-bold" type="button"
+                            data-bs-toggle="modal" data-bs-target="#storeSearchModal">
+                            <i class="fa-solid fa-magnifying-glass me-1"></i>검색
+                        </button>
+                    </div>
+                    <input type="hidden" name="storeIds" id="storeIdsHidden">
+                    <small id="storeHint" class="text-muted hint-text">없으면 나중에 매장 관리에서 신청 가능합니다.</small>
+                </div>
+
+
 
                 <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm mb-3">가입하기</button>
             </form>
@@ -147,6 +177,37 @@
         </div>
     </div>
 </main>
+
+<%-- 매장 검색 모달 --%>
+<div class="modal fade" id="storeSearchModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="fa-solid fa-store me-2 text-primary"></i>매장 검색
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <input type="text" id="modalStoreKeyword" class="form-control"
+                        placeholder="매장 이름 또는 코드 입력"
+                        oninput="searchStoreModal(this.value)">
+                    <button class="btn btn-primary fw-bold" type="button"
+                        onclick="searchStoreModal(document.getElementById('modalStoreKeyword').value)">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </button>
+                </div>
+                <div id="modalStoreResult">
+                    <div class="text-center text-muted py-4 small">
+                        <i class="fa-solid fa-magnifying-glass fa-2x mb-2 d-block"></i>
+                        매장 이름이나 코드를 입력해서 검색하세요.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <jsp:include page="footer.jsp" />
 
@@ -163,29 +224,189 @@
         const adminNotice = document.getElementById("adminNotice");
         const storeLabel  = document.getElementById("storeLabel");
         const storeWrap   = document.getElementById("storeWrap");
-        const storeInput  = document.querySelector("input[name='storeId']");
         const storeHint   = document.getElementById("storeHint");
-        const wageWrap    = document.getElementById("wageWrap");
 
         if (role === 'A') {
             // 점장: 승인 안내 표시, 매장ID/시급 숨김
             adminNotice.style.display = "block";
             storeWrap.style.display   = "none";
-            storeInput.required       = false;
-            storeInput.value          = "";
-            wageWrap.style.display    = "none";
+            selectedStores = [];
+            document.getElementById('storeIdsHidden').value = "";
+            document.getElementById('selectedStoreTags').innerHTML = "";
+            document.getElementById('workDaysWrap').style.display = "none";
         } else {
-            // 직원: 매장ID 선택, 시급 표시
+            // 직원: 매장 검색 표시, 시급 표시
             adminNotice.style.display = "none";
             storeWrap.style.display   = "block";
-            storeInput.required       = false;
-            storeLabel.innerHTML      = '소속 매장 ID <span class="text-muted">(선택)</span>';
-            storeInput.placeholder    = "매장코드 입력 (선택)";
+            storeLabel.innerHTML      = '소속 매장 <span class="text-muted">(선택)</span>';
             storeHint.innerText       = "없으면 나중에 매장 관리에서 신청 가능합니다.";
             storeHint.className       = "text-muted hint-text";
-            wageWrap.style.display    = "block";
+            document.getElementById('workDaysWrap').style.display = "block";
         }
     }
+
+    // 전화번호 자동 하이픈
+    function autoHyphen(input) {
+        let val = input.value.replace(/[^0-9]/g, '');
+        if (val.length <= 3) {
+            input.value = val;
+        } else if (val.length <= 7) {
+            input.value = val.slice(0, 3) + '-' + val.slice(3);
+        } else {
+            input.value = val.slice(0, 3) + '-' + val.slice(3, 7) + '-' + val.slice(7, 11);
+        }
+    }
+
+    // 요일 체크박스 → hidden input 연동
+    document.querySelectorAll('.day-check').forEach(function(chk) {
+        chk.addEventListener('change', function() {
+            const checked = Array.from(document.querySelectorAll('.day-check:checked'))
+                                 .map(c => c.value);
+            document.getElementById('workDaysHidden').value = checked.join(',');
+
+            // 선택된 버튼 스타일 변경
+            document.querySelectorAll('.day-check').forEach(function(c) {
+                const label = document.querySelector('label[for="' + c.id + '"]');
+                if (c.checked) {
+                    label.classList.replace('btn-outline-primary', 'btn-primary');
+                } else {
+                    label.classList.replace('btn-primary', 'btn-outline-primary');
+                }
+            });
+        });
+    });
+    let idChecked = false;
+
+    async function checkDuplicateId() {
+        const id = document.getElementById('inputId').value.trim();
+        const msgEl = document.getElementById('idCheckMsg');
+
+        if (!id) {
+            msgEl.className = 'hint-text text-danger';
+            msgEl.innerText = '아이디를 입력해주세요.';
+            return;
+        }
+
+        try {
+            const res  = await fetch('CheckId?id=' + encodeURIComponent(id));
+            const data = await res.json();
+
+            if (data.status === 'available') {
+                msgEl.className = 'hint-text text-success fw-bold';
+                msgEl.innerText = '✓ ' + data.message;
+                idChecked = true;
+            } else {
+                msgEl.className = 'hint-text text-danger fw-bold';
+                msgEl.innerText = '✗ ' + data.message;
+                idChecked = false;
+            }
+        } catch (e) {
+            msgEl.className = 'hint-text text-danger';
+            msgEl.innerText = '서버 오류가 발생했습니다.';
+        }
+    }
+
+    // 아이디 변경 시 중복확인 초기화
+    function resetIdCheck() {
+        idChecked = false;
+        const msgEl = document.getElementById('idCheckMsg');
+        msgEl.innerText = '';
+        msgEl.className = 'hint-text';
+    }
+    let regSearchTimer = null;
+    async function searchStoreModal(keyword) {
+        clearTimeout(regSearchTimer);
+        const resultBox = document.getElementById('modalStoreResult');
+
+        if (!keyword || keyword.trim().length < 1) {
+            resultBox.innerHTML = '<div class="text-center text-muted py-4 small"><i class="fa-solid fa-magnifying-glass fa-2x mb-2 d-block"></i>매장 이름이나 코드를 입력해서 검색하세요.</div>';
+            return;
+        }
+
+        regSearchTimer = setTimeout(async () => {
+            try {
+                const res  = await fetch('SearchStore?keyword=' + encodeURIComponent(keyword.trim()));
+                const data = await res.json();
+                resultBox.innerHTML = '';
+
+                if (data.status === 'success' && data.list.length > 0) {
+                    const table = document.createElement('table');
+                    table.className = 'table table-hover align-middle mb-0';
+                    table.innerHTML = '<thead class="table-light"><tr><th>매장 이름</th><th>매장 코드</th><th></th></tr></thead>';
+                    const tbody = document.createElement('tbody');
+
+                    data.list.forEach(store => {
+                        const tr = document.createElement('tr');
+                        tr.style.cursor = 'pointer';
+                        tr.innerHTML =
+                            '<td class="fw-bold">' + store.name + '</td>' +
+                            '<td class="text-muted">' + store.id + '</td>' +
+                            '<td class="text-end"><button type="button" class="btn btn-sm btn-primary fw-bold">선택</button></td>';
+                        tr.onclick = () => selectStoreReg(store.id, store.name);
+                        tbody.appendChild(tr);
+                    });
+
+                    table.appendChild(tbody);
+                    resultBox.appendChild(table);
+                } else {
+                    resultBox.innerHTML = '<div class="text-center text-muted py-4 small"><i class="fa-solid fa-circle-xmark fa-2x mb-2 d-block text-danger"></i>검색 결과가 없습니다.</div>';
+                }
+            } catch (e) {
+                resultBox.innerHTML = '<div class="text-center text-muted py-3 small">검색 중 오류가 발생했습니다.</div>';
+            }
+        }, 300);
+    }
+
+    // 선택된 매장 목록 (id, name 배열)
+    let selectedStores = [];
+
+    // 매장 선택 (다중)
+    function selectStoreReg(id, name) {
+        if (selectedStores.find(s => s.id === id)) {
+            alert('이미 선택된 매장입니다.');
+            return;
+        }
+
+        selectedStores.push({id: id, name: name});
+        renderStoreTags();
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('storeSearchModal'));
+        if (modal) modal.hide();
+        document.getElementById('modalStoreKeyword').value = '';
+        document.getElementById('modalStoreResult').innerHTML = '<div class="text-center text-muted py-4 small"><i class="fa-solid fa-magnifying-glass fa-2x mb-2 d-block"></i>매장 이름이나 코드를 입력해서 검색하세요.</div>';
+    }
+
+
+
+    // 선택된 매장 태그 렌더링
+    function renderStoreTags() {
+        const tagContainer = document.getElementById('selectedStoreTags');
+        tagContainer.innerHTML = '';
+
+        selectedStores.forEach(function(store) {
+            const tag = document.createElement('span');
+            tag.className = 'badge bg-primary d-flex align-items-center gap-1 px-3 py-2';
+            tag.style.fontSize = '13px';
+            tag.innerHTML = store.name + ' (' + store.id + ')' +
+                '<button type="button" class="btn-close btn-close-white ms-1" ' +
+                'style="font-size:10px;" onclick="removeStore(\'' + store.id + '\')"></button>';
+            tagContainer.appendChild(tag);
+        });
+
+        // hidden input 업데이트 (쉼표 구분)
+        document.getElementById('storeIdsHidden').value = selectedStores.map(s => s.id).join(',');
+    }
+
+    // 매장 태그 제거
+    function removeStore(id) {
+        selectedStores = selectedStores.filter(s => s.id !== id);
+        renderStoreTags();
+    }
+
+    // 모달 열릴 때 검색창 포커스
+    document.getElementById('storeSearchModal').addEventListener('shown.bs.modal', function() {
+        document.getElementById('modalStoreKeyword').focus();
+    });
 
     function checkPwMatch() {
         const pw = document.getElementById("pw").value;
@@ -203,6 +424,13 @@
 
     document.getElementById('regForm').addEventListener('submit', function(e) {
         e.preventDefault();
+
+        // 아이디 중복확인 체크
+        if (!idChecked) {
+            alert('아이디 중복확인을 해주세요.');
+            document.getElementById('inputId').focus();
+            return;
+        }
         const pw = document.getElementById("pw").value;
         const pwCheck = document.getElementById("pwCheck").value;
         if (pw !== pwCheck) {

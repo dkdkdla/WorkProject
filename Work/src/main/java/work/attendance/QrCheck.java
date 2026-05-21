@@ -18,12 +18,23 @@ public class QrCheck extends HttpServlet {
         PrintWriter out = response.getWriter();
         
         HttpSession session = request.getSession();
-        String userId = (String)session.getAttribute("userId");
-        String storeId = request.getParameter("storeId"); // qr_check.jsp에서 보낸 매장ID
-        String type = request.getParameter("type");       // 🚨 핵심: 'IN' 또는 'OUT'
+        String userId  = (String) session.getAttribute("userId");
+        String storeId = request.getParameter("storeId");
+        String type    = request.getParameter("type"); // 'IN' 또는 'OUT'
+
+        // 앱에서 호출 시 세션이 없으므로 파라미터로도 받음
+        if (userId == null || userId.isEmpty()) {
+            userId = request.getParameter("userId");
+        }
 
         if (userId == null || storeId == null || type == null) {
             out.print("{\"status\":\"fail\", \"message\":\"필수 정보가 누락되었습니다.\"}");
+            return;
+        }
+
+        // type 유효성 검사
+        if (!"IN".equals(type) && !"OUT".equals(type)) {
+            out.print("{\"status\":\"fail\", \"message\":\"출퇴근 구분이 올바르지 않습니다.\"}");
             return;
         }
 

@@ -46,7 +46,13 @@ public class StoreManage extends HttpServlet {
         String userRole = (String) session.getAttribute("userRole");
         String userId   = (String) session.getAttribute("userId");
 
-        if (userId == null || (!"A".equals(userRole) && !"S".equals(userRole))) {
+        // 앱에서 호출 시 세션 없으므로 파라미터로도 받음
+        if (userId == null || userId.isEmpty()) {
+            userId = request.getParameter("userId");
+            userRole = "A"; // 앱에서는 점장만 매장 생성 가능
+        }
+
+        if (userId == null || (!("A".equals(userRole)) && !("S".equals(userRole)))) {
             out.print("{\"status\":\"fail\", \"message\":\"권한이 없습니다.\"}");
             return;
         }

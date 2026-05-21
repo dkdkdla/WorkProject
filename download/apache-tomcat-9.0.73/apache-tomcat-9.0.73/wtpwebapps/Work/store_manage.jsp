@@ -99,7 +99,7 @@
         <div class="row g-3">
             <div class="col-md-5">
                 <label class="form-label small fw-bold text-secondary">매장 코드 (ID)</label>
-                <input type="text" id="storeId" class="form-control fw-bold" placeholder="예: store01" maxlength="20">
+                <input type="text" id="storeId" class="form-control fw-bold" placeholder="예: store02" maxlength="20">
                 <small class="text-muted">영문/숫자 조합, 중복 불가</small>
             </div>
             <div class="col-md-5">
@@ -121,28 +121,22 @@
             <span class="badge bg-warning text-dark ms-2 small">직원 전용</span>
         </h5>
         <p class="text-muted small mb-4">근무할 매장을 검색하여 소속을 신청하세요. <strong>점장 승인 후 소속이 확정됩니다.</strong></p>
-        <div class="row g-3" style="position:relative;">
+        <div class="row g-3">
             <div class="col-md-8">
-                <label class="form-label small fw-bold text-secondary">매장 이름 또는 코드 검색</label>
+                <label class="form-label small fw-bold text-secondary">매장 선택</label>
                 <div class="input-group">
-                    <input type="text" id="searchKeyword" class="form-control"
-                        placeholder="매장 이름 또는 코드 입력"
-                        oninput="searchStore(this.value)">
-                    <button class="btn btn-outline-secondary" type="button"
-                        onclick="searchStore(document.getElementById('searchKeyword').value)">
-                        <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="storeSearchInput" class="form-control bg-white"
+                        placeholder="매장을 검색해서 선택하세요" readonly>
+                    <button class="btn btn-outline-warning fw-bold text-dark" type="button"
+                        data-bs-toggle="modal" data-bs-target="#storeSearchModal">
+                        <i class="fa-solid fa-magnifying-glass me-1"></i>검색
                     </button>
                 </div>
-                <div id="searchResult" class="list-group shadow-sm mt-1"
-                    style="display:none; position:absolute; z-index:100; width:calc(100% - 24px);"></div>
+                <input type="hidden" id="selectedStoreId">
             </div>
             <div class="col-md-4 d-flex align-items-end">
                 <button type="button" onclick="joinStore()" class="btn btn-warning fw-bold w-100 text-dark">소속 신청</button>
             </div>
-        </div>
-        <input type="hidden" id="selectedStoreId">
-        <div id="selectedStoreInfo" class="mt-2" style="display:none;">
-            <small class="text-primary fw-bold"><i class="fa-solid fa-check me-1"></i>선택된 매장: <span id="selectedStoreName"></span></small>
         </div>
     </div>
     <% } %>
@@ -186,52 +180,102 @@
     </div>
 </div>
 
+<%-- 매장 검색 모달 --%>
+<div class="modal fade" id="storeSearchModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="fa-solid fa-store me-2 text-warning"></i>매장 검색
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <input type="text" id="modalStoreKeyword" class="form-control"
+                        placeholder="매장 이름 또는 코드 입력"
+                        oninput="searchStoreModal(this.value)">
+                    <button class="btn btn-primary fw-bold" type="button"
+                        onclick="searchStoreModal(document.getElementById('modalStoreKeyword').value)">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </button>
+                </div>
+                <div id="modalStoreResult">
+                    <div class="text-center text-muted py-4 small">
+                        <i class="fa-solid fa-magnifying-glass fa-2x mb-2 d-block"></i>
+                        매장 이름이나 코드를 입력해서 검색하세요.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <%@ include file="footer.jsp" %>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 let searchTimer = null;
 
-// 매장 검색 (직원용)
-function searchStore(keyword) {
+// 매장 검색 모달 (실시간 검색)
+async function searchStoreModal(keyword) {
     clearTimeout(searchTimer);
-    const resultBox = document.getElementById('searchResult');
+    const resultBox = document.getElementById('modalStoreResult');
+
     if (!keyword || keyword.trim().length < 1) {
-        resultBox.style.display = 'none';
+        resultBox.innerHTML = '<div class="text-center text-muted py-4 small"><i class="fa-solid fa-magnifying-glass fa-2x mb-2 d-block"></i>매장 이름이나 코드를 입력해서 검색하세요.</div>';
         return;
     }
+
     searchTimer = setTimeout(async () => {
         try {
             const res  = await fetch('SearchStore?keyword=' + encodeURIComponent(keyword.trim()));
             const data = await res.json();
             resultBox.innerHTML = '';
+
             if (data.status === 'success' && data.list.length > 0) {
+                const table = document.createElement('table');
+                table.className = 'table table-hover align-middle mb-0';
+                table.innerHTML = '<thead class="table-light"><tr><th>매장 이름</th><th>매장 코드</th><th></th></tr></thead>';
+                const tbody = document.createElement('tbody');
+
                 data.list.forEach(store => {
-                    const item = document.createElement('button');
-                    item.type = 'button';
-                    item.className = 'list-group-item list-group-item-action';
-                    item.innerHTML = '<span class="fw-bold">' + store.name + '</span> <small class="text-muted">(' + store.id + ')</small>';
-                    item.onclick = () => selectStore(store.id, store.name);
-                    resultBox.appendChild(item);
+                    const tr = document.createElement('tr');
+                    tr.style.cursor = 'pointer';
+                    tr.innerHTML =
+                        '<td class="fw-bold">' + store.name + '</td>' +
+                        '<td class="text-muted">' + store.id + '</td>' +
+                        '<td class="text-end"><button type="button" class="btn btn-sm btn-primary fw-bold">선택</button></td>';
+                    tr.onclick = () => selectStore(store.id, store.name);
+                    tbody.appendChild(tr);
                 });
-                resultBox.style.display = 'block';
+
+                table.appendChild(tbody);
+                resultBox.appendChild(table);
             } else {
-                resultBox.innerHTML = '<div class="list-group-item text-muted small">검색 결과가 없습니다.</div>';
-                resultBox.style.display = 'block';
+                resultBox.innerHTML = '<div class="text-center text-muted py-4 small"><i class="fa-solid fa-circle-xmark fa-2x mb-2 d-block text-danger"></i>검색 결과가 없습니다.</div>';
             }
-        } catch (e) { console.error(e); }
+        } catch (e) {
+            resultBox.innerHTML = '<div class="text-center text-muted py-3 small">검색 중 오류가 발생했습니다.</div>';
+        }
     }, 300);
 }
 
-// 매장 선택
+// 매장 선택 후 모달 닫기
 function selectStore(id, name) {
-    document.getElementById('selectedStoreId').value = id;
-    document.getElementById('searchKeyword').value   = name + ' (' + id + ')';
-    document.getElementById('selectedStoreName').innerText = name + ' (' + id + ')';
-    document.getElementById('selectedStoreInfo').style.display = 'block';
-    document.getElementById('searchResult').style.display = 'none';
+    document.getElementById('selectedStoreId').value   = id;
+    document.getElementById('storeSearchInput').value  = name + ' (' + id + ')';
+    const modal = bootstrap.Modal.getInstance(document.getElementById('storeSearchModal'));
+    if (modal) modal.hide();
+    document.getElementById('modalStoreKeyword').value = '';
+    document.getElementById('modalStoreResult').innerHTML = '<div class="text-center text-muted py-4 small"><i class="fa-solid fa-magnifying-glass fa-2x mb-2 d-block"></i>매장 이름이나 코드를 입력해서 검색하세요.</div>';
 }
 
-// 직원: 매장 소속 신청
+// 모달 열릴 때 검색창 포커스
+document.getElementById('storeSearchModal').addEventListener('shown.bs.modal', function() {
+    document.getElementById('modalStoreKeyword').focus();
+});
+
+// // 직원: 매장 소속 신청
 async function joinStore() {
     const storeId = document.getElementById('selectedStoreId').value.trim();
     if (!storeId) { alert('매장을 검색하여 선택해주세요.'); return; }

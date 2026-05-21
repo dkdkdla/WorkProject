@@ -16,6 +16,14 @@ import work.util.DBConn;
 public class ExcelDownload extends HttpServlet {
     
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        // 세션 체크
+        javax.servlet.http.HttpSession session = request.getSession(false);
+        String role = session != null ? (String)session.getAttribute("userRole") : null;
+        if (role == null || !"A".equals(role.trim())) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "권한이 없습니다.");
+            return;
+        }
+
         // 1. 파라미터 수신
         String storeId = request.getParameter("storeId");
         String year = request.getParameter("year");

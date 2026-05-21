@@ -41,7 +41,9 @@ public class AdminMemberList extends HttpServlet {
                 sb.append("{\"id\":\"").append(m.getId()).append("\",");
                 sb.append("\"name\":\"").append(m.getName()).append("\",");
                 sb.append("\"phone\":\"").append(m.getPhone()).append("\",");
-                sb.append("\"wage\":").append(m.getHourlyWage()).append("}");
+                sb.append("\"wage\":").append(m.getHourlyWage()).append(",");
+                sb.append("\"roleId\":").append(m.getRoleId()).append(",");
+                sb.append("\"workDays\":\"").append(m.getWorkDays() != null ? m.getWorkDays() : "").append("\"}");
                 if (i < list.size() - 1) sb.append(",");
             }
             sb.append("]}");
