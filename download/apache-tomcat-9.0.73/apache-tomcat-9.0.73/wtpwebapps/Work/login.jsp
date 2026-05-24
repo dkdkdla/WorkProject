@@ -51,6 +51,9 @@
                     로그인
                 </button>
 
+                <%-- 에러 메시지 --%>
+                <div id="loginError" class="alert alert-danger py-2 text-center small fw-bold" style="display:none; border-radius:8px;"></div>
+
                 <div class="find-links">
                     <a href="find_id.jsp">아이디 찾기</a>
                     <span class="divider"></span>
@@ -104,9 +107,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
 
             if (result.status === 'success') {
-                location.href = 'default.jsp';
+                // SA(전체관리자)는 superadmin_main.jsp로, 나머지는 default.jsp로
+                location.href = result.redirect || 'default.jsp';
             } else {
-                alert(result.message);
+                const errEl = document.getElementById('loginError');
+                errEl.innerText = result.message;
+                errEl.style.display = 'block';
+                // 비밀번호 초기화
+                document.querySelector('input[name="pw"]').value = '';
             }
         } catch (error) {
             console.error('Login Error:', error);

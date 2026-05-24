@@ -24,11 +24,9 @@ public class MyPageUpdate extends HttpServlet {
         HttpSession session = request.getSession();
         String userId   = (String) session.getAttribute("userId");
         String phone    = request.getParameter("phone");
-        String wage     = request.getParameter("wage");
         String newPw    = request.getParameter("new_pw");
         String workDays = request.getParameter("workDays");
 
-        // 앱에서 호출 시 세션 없으므로 파라미터로도 받음
         if (userId == null) userId = request.getParameter("id");
 
         if (userId == null) {
@@ -41,9 +39,9 @@ public class MyPageUpdate extends HttpServlet {
 
             String sql;
             if (isPwUpdate) {
-                sql = "UPDATE tb_member SET mem_phone = ?, hourly_wage = ?, work_days = ?, mem_pw = ? WHERE mem_id = ?";
+                sql = "UPDATE tb_member SET mem_phone = ?, work_days = ?, mem_pw = ? WHERE mem_id = ?";
             } else {
-                sql = "UPDATE tb_member SET mem_phone = ?, hourly_wage = ?, work_days = ? WHERE mem_id = ?";
+                sql = "UPDATE tb_member SET mem_phone = ?, work_days = ? WHERE mem_id = ?";
             }
 
             if (isPwUpdate) {
@@ -57,13 +55,12 @@ public class MyPageUpdate extends HttpServlet {
 
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 pstmt.setString(1, phone);
-                pstmt.setInt(2, wage != null && !wage.isEmpty() ? Integer.parseInt(wage) : 0);
-                pstmt.setString(3, workDays != null ? workDays : "");
+                pstmt.setString(2, workDays != null ? workDays : "");
                 if (isPwUpdate) {
-                    pstmt.setString(4, newPw);
-                    pstmt.setString(5, userId);
-                } else {
+                    pstmt.setString(3, newPw);
                     pstmt.setString(4, userId);
+                } else {
+                    pstmt.setString(3, userId);
                 }
                 pstmt.executeUpdate();
                 out.print("{\"status\":\"success\", \"message\":\"정보가 수정되었습니다.\"}");

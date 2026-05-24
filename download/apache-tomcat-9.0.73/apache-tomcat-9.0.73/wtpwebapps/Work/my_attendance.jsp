@@ -1,15 +1,24 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="work.dto.AttendanceDTO" %>
 <%@ page import="java.util.ArrayList" %>
+<%@ page import="java.util.LinkedHashMap" %>
+<%@ page import="java.util.Map" %>
 <%
-    // 서블릿에서 넘겨준 데이터 수신
     String searchMonth = (String)request.getAttribute("searchMonth");
-    if(searchMonth == null) { response.sendRedirect("MyAttendance"); return; } // 서블릿을 거치지 않은 경우 강제 이동
+    if (searchMonth == null) { response.sendRedirect("MyAttendance"); return; }
 
-    int hourlyWage = (Integer)request.getAttribute("hourlyWage");
+    int    hourlyWage      = (Integer)request.getAttribute("hourlyWage");
     double recognizedHours = (Double)request.getAttribute("recognizedHours");
-    int estimatedSalary = (Integer)request.getAttribute("estimatedSalary");
+    int    estimatedSalary = (Integer)request.getAttribute("estimatedSalary");
     ArrayList<AttendanceDTO> list = (ArrayList<AttendanceDTO>)request.getAttribute("attendanceList");
+
+    // 날짜별 그룹핑
+    LinkedHashMap<String, ArrayList<AttendanceDTO>> grouped = new LinkedHashMap<>();
+    for (AttendanceDTO dto : list) {
+        String date = dto.getAttTime().substring(0, 10);
+        if (!grouped.containsKey(date)) grouped.put(date, new ArrayList<>());
+        grouped.get(date).add(dto);
+    }
 %>
 <!DOCTYPE html>
 <html lang="ko">
@@ -22,13 +31,22 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="<%=request.getContextPath()%>/css/style.css">
     <link rel="icon" type="image/png" href="<%=request.getContextPath()%>/jlogo.png">
+    <style>
+        .day-group { border-left: 4px solid #4e73df; border-radius: 8px; }
+        .day-group.has-out { border-left-color: #1cc88a; }
+        .day-group.no-out  { border-left-color: #f6c23e; }
+        .time-badge-in  { background:#d4edda; color:#155724; padding:4px 14px; border-radius:20px; font-size:13px; font-weight:700; display:inline-block; }
+        .time-badge-out { background:#e2e3e5; color:#383d41; padding:4px 14px; border-radius:20px; font-size:13px; font-weight:700; display:inline-block; }
+        .working-now { background:#fff3cd; color:#856404; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700; animation: pulse 1.5s infinite; display:inline-block; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+    </style>
 </head>
 <body>
 
 <%@ include file="navbar.jsp" %>
 
-<div class="container my-5" style="max-width: 800px;">
-    
+<div class="container my-5" style="max-width:800px;">
+
     <div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-3">
         <div>
             <h3 class="fw-bold text-dark mb-1">
@@ -36,22 +54,22 @@
             </h3>
             <p class="text-muted small mb-0">해당 월의 예상 급여와 상세 기록을 확인하세요.</p>
         </div>
-        
         <form action="MyAttendance" method="get" class="d-flex gap-2">
-            <input type="month" name="searchMonth" value="<%=searchMonth%>" class="form-control form-control-sm shadow-sm" style="width:160px;">
-            <button type="submit" class="btn btn-primary btn-sm px-3 shadow-sm fw-bold">조회</button>
+            <input type="month" name="searchMonth" value="<%=searchMonth%>"
+                class="form-control form-control-sm shadow-sm" style="width:160px;">
+            <button type="submit" class="btn btn-primary btn-sm px-3 fw-bold">조회</button>
         </form>
     </div>
 
+    <!-- 급여 요약 카드 -->
     <div class="card custom-card mb-5 border-0 shadow-sm overflow-hidden">
         <div class="card-body p-4 p-md-5 text-center">
-            <h6 class="text-uppercase text-primary fw-bold mb-3" style="letter-spacing: 1px;">
+            <h6 class="text-uppercase text-primary fw-bold mb-3" style="letter-spacing:1px;">
                 <%=searchMonth.substring(0,4)%>년 <%=searchMonth.substring(5)%>월 예상 수령액
             </h6>
             <h1 class="display-5 fw-bold text-dark mb-4">
                 ￦ <%=String.format("%,d", estimatedSalary)%>
             </h1>
-            
             <div class="row g-3 justify-content-center">
                 <div class="col-6 col-md-4">
                     <div class="p-3 bg-light rounded-3">
@@ -65,70 +83,96 @@
                         <span class="fw-bold text-dark"><%=String.format("%,d", hourlyWage)%>원</span>
                     </div>
                 </div>
+                <div class="col-6 col-md-4">
+                    <div class="p-3 bg-light rounded-3">
+                        <small class="text-muted d-block mb-1">총 출근 일수</small>
+                        <span class="fw-bold text-dark"><%=grouped.size()%>일</span>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="bg-primary-subtle py-2 text-center">
-            <small class="text-primary fw-bold" style="font-size: 11px;">
-                <i class="fa-solid fa-circle-info me-1"></i> 급여는 30분 단위(0.5h)로 합산하여 계산되었습니다.
+            <small class="text-primary fw-bold" style="font-size:11px;">
+                <i class="fa-solid fa-circle-info me-1"></i>급여는 30분 단위(0.5h)로 합산하여 계산됩니다.
             </small>
         </div>
     </div>
 
+    <!-- 상세 기록 -->
     <div class="d-flex align-items-center mb-3">
         <h5 class="fw-bold text-dark mb-0">상세 근무 기록</h5>
         <span class="badge bg-secondary ms-2"><%=list.size()%>건</span>
     </div>
 
-    <% if(list.isEmpty()) { %>
-        <div class="card custom-card border-0 p-5 text-center">
-            <i class="fa-solid fa-calendar-xmark fa-3x text-light mb-3"></i>
-            <p class="text-muted mb-0">해당 월의 근무 기록이 존재하지 않습니다.</p>
-        </div>
-    <% } else { %>
-        <div class="card custom-card border-0 shadow-sm overflow-hidden">
-            <div class="table-responsive">
-                <table class="table custom-table mb-0 text-center">
-                    <thead>
-                        <tr>
-                            <th>근무 일자</th>
-                            <th>매장명</th>
-                            <th>출퇴근 시간</th>
-                            <th>상태</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% for(AttendanceDTO dto : list) { 
-                            String fullDate = dto.getAttTime();
-                            String datePart = fullDate.substring(0, 10);
-                            String timePart = fullDate.substring(11, 16);
-                        %>
-                        <tr>
-                            <td class="fw-bold text-dark"><%=datePart%></td>
-                            <td class="small text-secondary"><%=dto.getStoreName()%></td>
-                            <td class="fw-bold"><%=timePart%></td>
-                            <td>
-                                <% if("출근".equals(dto.getAttType())) { %>
-                                    <span class="badge-in">출근</span>
-                                <% } else { %>
-                                    <span class="badge-out">퇴근</span>
-                                <% } %>
-                            </td>
-                        </tr>
-                        <% } %>
-                    </tbody>
-                </table>
+<%
+    if (list.isEmpty()) {
+%>
+    <div class="card custom-card border-0 p-5 text-center shadow-sm">
+        <i class="fa-solid fa-calendar-xmark fa-3x text-light mb-3"></i>
+        <p class="text-muted mb-0">해당 월의 근무 기록이 없습니다.</p>
+    </div>
+<%
+    } else {
+        for (Map.Entry<String, ArrayList<AttendanceDTO>> entry : grouped.entrySet()) {
+            String date = entry.getKey();
+            ArrayList<AttendanceDTO> dayList = entry.getValue();
+
+            boolean hasIn = false, hasOut = false;
+            String inTime = "", outTime = "", storeName = "";
+            for (AttendanceDTO d : dayList) {
+                if ("출근".equals(d.getAttType())) {
+                    hasIn     = true;
+                    inTime    = d.getAttTime().substring(11, 16);
+                    storeName = d.getStoreName();
+                }
+                if ("퇴근".equals(d.getAttType())) {
+                    hasOut  = true;
+                    outTime = d.getAttTime().substring(11, 16);
+                }
+            }
+            String groupClass = hasOut ? "has-out" : (hasIn ? "no-out" : "");
+%>
+    <div class="card border-0 shadow-sm mb-3 day-group <%=groupClass%>">
+        <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                    <span class="fw-bold text-dark"><%=date%></span>
+                    <small class="text-muted ms-2"><%=storeName%></small>
+                </div>
+                <%if (hasIn && !hasOut) {%>
+                    <span class="working-now"><i class="fa-solid fa-circle-dot me-1"></i>근무 중</span>
+                <%} else if (hasIn && hasOut) {%>
+                    <span class="badge bg-success-subtle text-success px-3 py-2">완료</span>
+                <%}%>
+            </div>
+            <div class="d-flex gap-3 flex-wrap">
+                <%if (hasIn) {%>
+                <div>
+                    <small class="text-muted d-block mb-1">출근</small>
+                    <span class="time-badge-in"><i class="fa-solid fa-arrow-right-to-bracket me-1"></i><%=inTime%></span>
+                </div>
+                <%}%>
+                <%if (hasOut) {%>
+                <div>
+                    <small class="text-muted d-block mb-1">퇴근</small>
+                    <span class="time-badge-out"><i class="fa-solid fa-arrow-right-from-bracket me-1"></i><%=outTime%></span>
+                </div>
+                <%}%>
             </div>
         </div>
-    <% } %>
+    </div>
+<%
+        } // end for
+    } // end else
+%>
 
     <div class="text-center mt-5">
         <a href="default.jsp" class="btn btn-light px-4 py-2 fw-bold border shadow-sm">
-            <i class="fa-solid fa-house me-2"></i>메인으로 돌아가기
+            <i class="fa-solid fa-house me-2"></i>메인으로
         </a>
     </div>
 </div>
 
 <%@ include file="footer.jsp" %>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

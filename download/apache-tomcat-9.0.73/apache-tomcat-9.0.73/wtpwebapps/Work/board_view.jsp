@@ -66,7 +66,7 @@ async function loadBoardDetail() {
     const postId = urlParams.get('id');
 
     if (!postId) {
-        alert("게시글 번호를 찾을 수 없습니다.");
+        showToast('게시글 번호를 찾을 수 없습니다.', 'warning');
         location.href = 'board_list.jsp';
         return;
     }

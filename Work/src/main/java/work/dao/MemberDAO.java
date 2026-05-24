@@ -340,6 +340,7 @@ public class MemberDAO {
             return pstmt.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
+
     
     private void closeAll(Connection conn, PreparedStatement pstmt, ResultSet rs) {
         if(rs != null) try{ rs.close(); } catch(Exception e){}
@@ -641,6 +642,42 @@ public class MemberDAO {
             }
         } catch (Exception e) { e.printStackTrace(); }
         return 0;
+    }
+
+    // 현재 매장 기준 역할명 + 시급 조회
+    public String[] getStoreRoleInfo(String memId, String storeId) {
+        // 해당 매장의 역할로 시급/역할명 조회
+        String sql = "SELECT r.role_name, r.hourly_wage " +
+                     "FROM tb_role r " +
+                     "JOIN tb_member m ON m.role_id = r.role_id " +
+                     "WHERE m.mem_id = ? AND r.store_id = ?";
+        try (Connection conn = DBConn.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, memId);
+            pstmt.setString(2, storeId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return new String[]{
+                        rs.getString("role_name"),
+                        String.valueOf(rs.getInt("hourly_wage"))
+                    };
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return new String[]{"", "0"};
+    }
+
+    // 역할 ID로 역할명 조회
+    public String getRoleNameById(int roleId) {
+        String sql = "SELECT role_name FROM tb_role WHERE role_id = ?";
+        try (Connection conn = DBConn.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, roleId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) return rs.getString("role_name");
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return "";
     }
 
     // 역할 ID로 시급 조회

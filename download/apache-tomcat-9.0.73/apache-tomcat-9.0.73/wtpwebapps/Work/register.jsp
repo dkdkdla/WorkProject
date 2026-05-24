@@ -131,22 +131,6 @@
                     <small class="text-muted hint-text">실제 생년월일을 입력해주세요.</small>
                 </div>
 
-                <div class="mb-4" id="workDaysWrap">
-                    <label class="form-label">근무 가능 요일 <span class="text-muted">(선택)</span></label>
-                    <div class="d-flex flex-wrap gap-2 mt-1">
-                        <% String[] days = {"월", "화", "수", "목", "금", "토", "일"}; %>
-                        <% for (String day : days) { %>
-                        <div class="form-check form-check-inline m-0">
-                            <input class="form-check-input day-check" type="checkbox"
-                                id="day<%=day%>" value="<%=day%>">
-                            <label class="form-check-label btn btn-sm btn-outline-primary px-3 py-2 fw-bold"
-                                for="day<%=day%>"><%=day%></label>
-                        </div>
-                        <% } %>
-                    </div>
-                    <input type="hidden" name="workDays" id="workDaysHidden">
-                    <small class="text-muted hint-text mt-1 d-block">선택하지 않으면 협의 후 결정으로 처리됩니다.</small>
-                </div>
 
                 <div class="mb-4" id="storeWrap">
                     <label class="form-label" id="storeLabel">소속 매장 <span class="text-muted">(선택, 여러 개 가능)</span></label>
@@ -165,6 +149,23 @@
                     <input type="hidden" name="storeIds" id="storeIdsHidden">
                     <small id="storeHint" class="text-muted hint-text">없으면 나중에 매장 관리에서 신청 가능합니다.</small>
                 </div>
+                <div class="mb-4" id="workDaysWrap">
+                    <label class="form-label">근무 가능 요일 <span class="text-muted">(선택)</span></label>
+                    <div class="d-flex flex-wrap gap-2 mt-1">
+                        <% String[] days = {"월", "화", "수", "목", "금", "토", "일"}; %>
+                        <% for (String day : days) { %>
+                        <div class="m-0">
+                            <input class="form-check-input day-check d-none" type="checkbox"
+                                id="day<%=day%>" value="<%=day%>">
+                            <label class="btn btn-sm btn-outline-primary px-3 py-2 fw-bold"
+                                for="day<%=day%>"><%=day%></label>
+                        </div>
+                        <% } %>
+                    </div>
+                    <input type="hidden" name="workDays" id="workDaysHidden">
+                    <small class="text-muted hint-text mt-1 d-block">선택하지 않으면 협의 후 결정으로 처리됩니다.</small>
+                </div>
+
 
 
 
@@ -363,7 +364,7 @@
     // 매장 선택 (다중)
     function selectStoreReg(id, name) {
         if (selectedStores.find(s => s.id === id)) {
-            alert('이미 선택된 매장입니다.');
+            showToast('이미 선택된 매장입니다.', 'warning');
             return;
         }
 
@@ -427,14 +428,14 @@
 
         // 아이디 중복확인 체크
         if (!idChecked) {
-            alert('아이디 중복확인을 해주세요.');
+            showToast('아이디 중복확인을 해주세요.', 'warning');
             document.getElementById('inputId').focus();
             return;
         }
         const pw = document.getElementById("pw").value;
         const pwCheck = document.getElementById("pwCheck").value;
         if (pw !== pwCheck) {
-            alert("비밀번호를 다시 확인해 주세요.");
+            showToast('비밀번호가 일치하지 않습니다.', 'danger');
             return;
         }
         
@@ -460,7 +461,7 @@
                 alert(data.message);
             }
         })
-        .catch(err => alert("서버 통신 오류가 발생했습니다."));
+        .catch(err => showToast('서버 통신 오류가 발생했습니다.', 'danger'));
     });
 </script>
 

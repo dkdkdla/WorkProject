@@ -94,13 +94,13 @@ document.getElementById('editForm').addEventListener('submit', async function(e)
         const data = await res.json();
 
         if (data.status === 'success') {
-            alert(data.message);
+            showToast(data.message, data.status === 'success' ? 'success' : 'danger');
             location.href = 'board_view.jsp?id=<%=postId%>&storeId=<%=storeId%>';
         } else {
-            alert(data.message);
+            showToast(data.message, data.status === 'success' ? 'success' : 'danger');
         }
     } catch (e) {
-        alert('서버 통신 오류가 발생했습니다.');
+        showToast('서버 통신 오류가 발생했습니다.', 'warning');
     } finally {
         submitBtn.innerHTML = originalHtml;
         submitBtn.disabled  = false;

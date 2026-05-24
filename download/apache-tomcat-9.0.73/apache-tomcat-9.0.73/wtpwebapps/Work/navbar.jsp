@@ -106,10 +106,10 @@ function changeStore(storeId) {
     .then(res => res.json())
     .then(data => {
         if(data.status === 'success') {
-            alert(data.message);
+            showToast(data.message, data.status === 'success' ? 'success' : 'danger');
             location.reload(); 
         } else {
-            alert(data.message);
+            showToast(data.message, data.status === 'success' ? 'success' : 'danger');
         }
     })
     .catch(err => console.error('Error:', err));

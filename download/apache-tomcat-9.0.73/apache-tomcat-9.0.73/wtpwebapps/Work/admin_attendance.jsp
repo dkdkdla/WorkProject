@@ -131,18 +131,18 @@
     <div class="row g-4">
         <div class="col-lg-4">
             <div class="card custom-card p-4 mb-4 border-top border-4 border-primary shadow-sm">
-                <h6 class="fw-bold mb-3"><i class="fa-solid fa-filter me-2"></i>조회 필터</h6>
+                <h6 class="fw-bold mb-3"><i class="fa-solid fa-filter me-2 text-primary"></i>조회 필터</h6>
                 <form action="AdminHistory" method="get">
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold text-secondary">시작일</label>
+                        <input type="date" name="startDate" value="<%=startDate%>" class="form-control form-control-sm">
+                    </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">조회 기간</label>
-                        <div class="input-group input-group-sm">
-                            <input type="date" name="startDate" value="<%=startDate%>" class="form-control">
-                            <span class="input-group-text">~</span>
-                            <input type="date" name="endDate" value="<%=endDate%>" class="form-control">
-                        </div>
+                        <label class="form-label small fw-bold text-secondary">종료일</label>
+                        <input type="date" name="endDate" value="<%=endDate%>" class="form-control form-control-sm">
                     </div>
                     <div class="mb-4">
-                        <label class="form-label small fw-bold">직원 선택</label>
+                        <label class="form-label small fw-bold text-secondary">직원 선택</label>
                         <select name="searchMemId" class="form-select form-select-sm">
                             <option value="">전체 직원</option>
                             <% for(MemberDTO m : memberList) { %>
@@ -150,7 +150,9 @@
                             <% } %>
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100 fw-bold mb-2">조회하기</button>
+                    <button type="submit" class="btn btn-primary w-100 fw-bold mb-2">
+                        <i class="fa-solid fa-search me-1"></i>조회하기
+                    </button>
                     <button type="button" class="btn btn-success w-100 fw-bold" onclick="openAddModal()">
                         <i class="fa-solid fa-plus me-1"></i> 기록 수동 추가
                     </button>

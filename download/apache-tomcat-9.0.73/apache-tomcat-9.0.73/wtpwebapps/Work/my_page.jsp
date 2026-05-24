@@ -8,6 +8,9 @@
     
     // 권한 확인용 (세션에서 직접 가져옴)
     String userRole = (String)session.getAttribute("userRole");
+    String roleName  = (String)request.getAttribute("roleName");
+    int    storeWage = request.getAttribute("storeWage") != null ? (int)request.getAttribute("storeWage") : 0;
+    if (roleName == null) roleName = "";
 
     // 직접 접근 방지
     if (dto == null) {
@@ -62,8 +65,17 @@
                         maxlength="13" oninput="autoHyphen(this)" required>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label small fw-bold text-secondary">시급 (원)</label>
-                    <input type="number" name="wage" class="form-control" value="<%=dto.getHourlyWage()%>">
+                    <label class="form-label small fw-bold text-secondary">역할 / 시급</label>
+                    <div class="form-control bg-light d-flex align-items-center justify-content-between">
+                        <span class="fw-bold text-dark">
+                            <% if (!roleName.isEmpty()) { %>
+                            <span class="badge bg-primary me-2"><%=roleName%></span>
+                            <% } else { %>
+                            <span class="badge bg-secondary me-2">미지정</span>
+                            <% } %>
+                            <%=storeWage > 0 ? String.format("%,d", storeWage) + "원" : "-"%>
+                        </span>
+                    </div>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label small fw-bold text-secondary">근무 가능 요일</label>
@@ -74,11 +86,11 @@
                             java.util.List<String> selectedDays = java.util.Arrays.asList(workDaysStr.split(","));
                         %>
                         <% for (String d : allDays) { %>
-                        <div class="form-check form-check-inline m-0">
-                            <input class="form-check-input day-check-edit" type="checkbox"
+                        <div class="m-0">
+                            <input class="day-check-edit d-none" type="checkbox"
                                 id="editDay<%=d%>" value="<%=d%>"
                                 <%=selectedDays.contains(d.trim()) ? "checked" : ""%>>
-                            <label class="form-check-label btn btn-sm px-2 py-1 fw-bold <%=selectedDays.contains(d.trim()) ? "btn-primary" : "btn-outline-primary"%>"
+                            <label class="btn btn-sm px-2 py-1 fw-bold <%=selectedDays.contains(d.trim()) ? "btn-primary" : "btn-outline-primary"%>"
                                 for="editDay<%=d%>"><%=d%></label>
                         </div>
                         <% } %>
@@ -99,68 +111,6 @@
         </form>
     </div>
 
-    <% if ("A".equals(userRole)) { %>
-    <div class="card custom-card p-4 mb-4 shadow-sm admin-register-box">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="fw-bold mb-0 text-primary"><i class="fa-solid fa-plus-circle me-2"></i>새로운 매장 등록</h5>
-            <span class="badge bg-primary">Admin Only</span>
-        </div>
-        <p class="text-muted small">새로운 매장 코드와 <strong>제작사(AlbaPass)에서 발급받은 라이선스 코드</strong>를 입력하세요.</p>
-        
-        <form id="adminStoreRegForm">
-            <div class="row g-2">
-                <div class="col-md-5">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white small fw-bold text-primary">ID</span>
-                        <input type="text" id="newStoreId" class="form-control fw-bold" placeholder="매장 코드" required>
-                    </div>
-                </div>
-                <div class="col-md-5">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white small fw-bold text-danger">CODE</span>
-                        <input type="password" id="adminCode" class="form-control" placeholder="라이선스 코드" required>
-                        <button class="btn btn-outline-secondary border-start-0 bg-white" type="button" onclick="toggleAdminCodeVisibility()">
-                            <i class="fa-solid fa-eye text-muted" id="adminCodeIcon"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <button type="button" onclick="registerNewStore()" class="btn btn-primary fw-bold w-100 h-100">등록</button>
-                </div>
-            </div>
-        </form>
-        <small class="text-muted mt-2 d-block">유효한 라이선스 코드가 없는 경우 고객센터로 문의해 주세요.</small>
-    </div>
-    <% } %>
-
-    <div class="card custom-card p-4 shadow-sm">
-        <h5 class="fw-bold mb-2"><i class="fa-solid fa-store me-2 text-muted"></i>내 근무지 관리</h5>
-        <div class="list-group list-group-flush border rounded-3 mb-4 overflow-hidden mt-3">
-            <% if(myStores == null || myStores.size() == 0) { %>
-                <div class="list-group-item text-center py-4 text-muted small">등록된 근무지가 없습니다.</div>
-            <% } else { %>
-                <% for(String[] store : myStores) { %>
-                    <div class="list-group-item d-flex justify-content-between align-items-center p-3">
-                        <div>
-                            <span class="fw-bold text-dark"><%=store[1]%></span>
-                            <small class="text-muted ms-2">(ID: <%=store[0]%>)</small>
-                        </div>
-                        <button type="button" class="btn btn-sm btn-outline-danger border-0" onclick="deleteStore('<%=dto.getId()%>', '<%=store[0]%>')">
-                            <i class="fa-solid fa-trash-can"></i> 삭제
-                        </button>
-                    </div>
-                <% } %>
-            <% } %>
-        </div>
-
-        <form id="addStoreForm">
-            <div class="input-group">
-                <span class="input-group-text bg-white small fw-bold text-secondary">매장 연결</span>
-                <input type="text" name="add_store_id" class="form-control shadow-none" placeholder="기존 매장 코드 입력" required>
-                <button type="submit" class="btn btn-dark fw-bold px-4">추가</button>
-            </div>
-        </form>
-    </div>
 </div>
 
 <%@ include file="footer.jsp" %>
@@ -212,68 +162,6 @@
         }
     }
 
-    // 관리자 새 매장 등록 (AdminStoreRegister 호출)
-    async function registerNewStore() {
-        const storeId = document.getElementById('newStoreId').value.trim();
-        const adminCode = document.getElementById('adminCode').value.trim();
-        
-        if(!storeId || !adminCode) return alert('매장 ID와 라이선스 코드를 모두 입력해주세요.');
-        if(!confirm("[" + storeId + "] 매장을 새로 등록하시겠습니까?")) return;
-
-        const params = new URLSearchParams();
-        params.append('newStoreId', storeId);
-        params.append('adminCode', adminCode);
-
-        try {
-            const res = await fetch('AdminStoreRegister', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: params
-            });
-            const data = await res.json();
-            
-            if(data.status === 'success') {
-                alert(data.message);
-                location.href = 'default.jsp';
-            } else {
-                alert("등록 실패: " + data.message);
-            }
-        } catch (error) {
-            alert("서버 통신 오류가 발생했습니다.");
-            console.error(error);
-        }
-    }
-
-    // 기본 정보 수정 (MyPageUpdate 호출)
-    document.getElementById('profileForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        if(!confirm("정보를 수정하시겠습니까?")) return;
-        const formData = new URLSearchParams(new FormData(this));
-        const res = await fetch('MyPageUpdate', { method: 'POST', body: formData });
-        const data = await res.json();
-        alert(data.message);
-        if(data.status === 'success') location.reload();
-    });
-
-    // 기존 매장 추가 (MyStoreAdd 호출)
-    document.getElementById('addStoreForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const formData = new URLSearchParams(new FormData(this));
-        formData.append("id", "<%=dto.getId()%>");
-        const res = await fetch('MyStoreAdd', { method: 'POST', body: formData });
-        const data = await res.json();
-        alert(data.message);
-        if(data.status === 'success') location.reload();
-    });
-
-    // 매장 삭제 (MyStoreDelete 호출)
-    async function deleteStore(userId, storeId) {
-        if (!confirm("해당 근무지를 목록에서 삭제하시겠습니까?")) return;
-        const res = await fetch('MyStoreDelete?id=' + userId + '&storeId=' + storeId);
-        const data = await res.json();
-        alert(data.message);
-        if(data.status === 'success') location.reload();
-    }
 </script>
 </body>
 </html>

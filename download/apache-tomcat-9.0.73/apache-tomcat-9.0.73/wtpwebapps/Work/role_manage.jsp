@@ -46,8 +46,9 @@
             <div class="col-md-4">
                 <div class="input-group">
                     <input type="number" id="newWage" class="form-control" placeholder="시급" min="0">
-                    <span class="input-group-text">원</span>
+                    <span class="input-group-text">원/시</span>
                 </div>
+                <small class="text-muted" style="font-size:11px;">예: 10320 (2026년 최저임금)</small>
             </div>
             <div class="col-md-3">
                 <button type="button" onclick="addRole()" class="btn btn-primary fw-bold w-100">추가</button>
@@ -78,11 +79,14 @@
                                 id="roleName-<%=r[0]%>" value="<%=r[1]%>">
                         </td>
                         <td>
-                            <div class="input-group input-group-sm" style="max-width:140px;">
-                                <input type="number" class="form-control border-0 bg-transparent"
+                            <div class="input-group input-group-sm" style="max-width:160px;">
+                                <input type="number" class="form-control border-0 bg-transparent fw-bold text-primary"
                                     id="roleWage-<%=r[0]%>" value="<%=r[2]%>">
-                                <span class="input-group-text bg-transparent border-0">원</span>
+                                <span class="input-group-text bg-transparent border-0 text-muted">원/시</span>
                             </div>
+                            <small class="text-muted" style="font-size:11px;">
+                                월 160h 기준: <%=String.format("%,d", Integer.parseInt(r[2]) * 160)%>원
+                            </small>
                         </td>
                         <td class="text-center">
                             <button class="btn btn-sm btn-outline-primary fw-bold me-1"

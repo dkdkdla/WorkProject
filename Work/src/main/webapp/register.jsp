@@ -149,6 +149,23 @@
                     <input type="hidden" name="storeIds" id="storeIdsHidden">
                     <small id="storeHint" class="text-muted hint-text">없으면 나중에 매장 관리에서 신청 가능합니다.</small>
                 </div>
+                <div class="mb-4" id="workDaysWrap">
+                    <label class="form-label">근무 가능 요일 <span class="text-muted">(선택)</span></label>
+                    <div class="d-flex flex-wrap gap-2 mt-1">
+                        <% String[] days = {"월", "화", "수", "목", "금", "토", "일"}; %>
+                        <% for (String day : days) { %>
+                        <div class="m-0">
+                            <input class="form-check-input day-check d-none" type="checkbox"
+                                id="day<%=day%>" value="<%=day%>">
+                            <label class="btn btn-sm btn-outline-primary px-3 py-2 fw-bold"
+                                for="day<%=day%>"><%=day%></label>
+                        </div>
+                        <% } %>
+                    </div>
+                    <input type="hidden" name="workDays" id="workDaysHidden">
+                    <small class="text-muted hint-text mt-1 d-block">선택하지 않으면 협의 후 결정으로 처리됩니다.</small>
+                </div>
+
 
 
 
@@ -161,22 +178,6 @@
         </div>
     </div>
 </main>
-                <div class="mb-4" id="workDaysWrap">
-                    <label class="form-label">근무 가능 요일 <span class="text-muted">(선택)</span></label>
-                    <div class="d-flex flex-wrap gap-2 mt-1">
-                        <% String[] days = {"월", "화", "수", "목", "금", "토", "일"}; %>
-                        <% for (String day : days) { %>
-                        <div class="form-check form-check-inline m-0">
-                            <input class="form-check-input day-check" type="checkbox"
-                                id="day<%=day%>" value="<%=day%>">
-                            <label class="form-check-label btn btn-sm btn-outline-primary px-3 py-2 fw-bold"
-                                for="day<%=day%>"><%=day%></label>
-                        </div>
-                        <% } %>
-                    </div>
-                    <input type="hidden" name="workDays" id="workDaysHidden">
-                    <small class="text-muted hint-text mt-1 d-block">선택하지 않으면 협의 후 결정으로 처리됩니다.</small>
-                </div>
 
 <%-- 매장 검색 모달 --%>
 <div class="modal fade" id="storeSearchModal" tabindex="-1" aria-hidden="true">

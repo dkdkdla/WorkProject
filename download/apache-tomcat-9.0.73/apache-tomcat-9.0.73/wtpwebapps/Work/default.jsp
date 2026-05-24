@@ -226,52 +226,71 @@
 
             <% } else { %>
                 <div class="col-12 col-lg-8">
-                    <h5 class="fw-bold text-dark mb-4"><i class="fa-solid fa-person-walking text-primary me-2"></i>나의 근무</h5>
+                    <h5 class="fw-bold text-dark mb-4">
+                        <i class="fa-solid fa-person-walking text-primary me-2"></i>나의 근무
+                    </h5>
                     <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <a href="qr_check.jsp" class="card custom-card p-4 d-flex flex-row align-items-center h-100 shadow-sm text-decoration-none">
-                                <div class="icon-box bg-primary text-white shadow me-3"><i class="fa-solid fa-camera fa-lg"></i></div>
-                                <div><h6 class="mb-1 fw-bold text-dark">출퇴근 찍기</h6><small class="text-muted">QR 스캔으로 기록합니다.</small></div>
+                        <div class="col-6">
+                            <a href="qr_check.jsp" class="card custom-card p-4 d-flex flex-column align-items-center justify-content-center h-100 shadow-sm text-decoration-none text-center">
+                                <div class="icon-box bg-primary text-white shadow mb-2"><i class="fa-solid fa-camera fa-lg"></i></div>
+                                <h6 class="mb-1 fw-bold text-dark">출퇴근 찍기</h6>
+                                <small class="text-muted">QR 스캔으로 기록</small>
                             </a>
                         </div>
-                        <div class="col-md-6">
-                            <a href="MyAttendance" class="card custom-card p-4 d-flex flex-row align-items-center h-100 shadow-sm text-decoration-none">
-                                <div class="icon-box text-white shadow me-3" style="background:#00b894;"><i class="fa-solid fa-list-check fa-lg"></i></div>
-                                <div><h6 class="mb-1 fw-bold text-dark">내 근무 기록</h6><small class="text-muted">내 출퇴근 이력을 확인합니다.</small></div>
+                        <div class="col-6">
+                            <a href="MyAttendance" class="card custom-card p-4 d-flex flex-column align-items-center justify-content-center h-100 shadow-sm text-decoration-none text-center">
+                                <div class="icon-box text-white shadow mb-2" style="background:#00b894;"><i class="fa-solid fa-list-check fa-lg"></i></div>
+                                <h6 class="mb-1 fw-bold text-dark">내 근무 기록</h6>
+                                <small class="text-muted">출퇴근 이력 확인</small>
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="StoreManage" class="card custom-card p-4 d-flex flex-column align-items-center justify-content-center h-100 shadow-sm text-decoration-none text-center">
+                                <div class="icon-box bg-warning text-white shadow mb-2"><i class="fa-solid fa-store fa-lg"></i></div>
+                                <h6 class="mb-1 fw-bold text-dark">매장 관리</h6>
+                                <small class="text-muted">소속 매장 신청</small>
+                            </a>
+                        </div>
+                        <div class="col-6">
+                            <a href="board_list.jsp" class="card custom-card p-4 d-flex flex-column align-items-center justify-content-center h-100 shadow-sm text-decoration-none text-center">
+                                <div class="icon-box bg-success text-white shadow mb-2"><i class="fa-solid fa-bullhorn fa-lg"></i></div>
+                                <h6 class="mb-1 fw-bold text-dark">소통 게시판</h6>
+                                <small class="text-muted">공지 및 소통</small>
                             </a>
                         </div>
                     </div>
-
                     <div class="card custom-card shadow-sm p-4">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="fw-bold mb-0"><i class="fa-solid fa-bullhorn me-2 text-success"></i>매장 게시판</h5>
+                            <h5 class="fw-bold mb-0"><i class="fa-solid fa-bullhorn me-2 text-success"></i>최근 게시글</h5>
                             <a href="board_list.jsp" class="btn btn-link btn-sm text-decoration-none">더보기</a>
                         </div>
                         <div class="table-responsive">
                             <table class="table table-hover board-table mb-0">
-                                <thead>
-                                    <tr><th>제목</th><th class="text-end">작성일</th></tr>
-                                </thead>
-                                <tbody>
-                                    <jsp:include page="board_list_mini.jsp" />
-                                </tbody>
+                                <thead><tr><th>제목</th><th class="text-end">작성일</th></tr></thead>
+                                <tbody><jsp:include page="board_list_mini.jsp" /></tbody>
                             </table>
                         </div>
                     </div>
                 </div>
-
                 <div class="col-12 col-lg-4">
-                    <h5 class="fw-bold text-dark mb-4"><i class="fa-solid fa-link text-secondary me-2"></i>바로가기</h5>
+                    <h5 class="fw-bold text-dark mb-4">
+                        <i class="fa-solid fa-link text-secondary me-2"></i>바로가기
+                    </h5>
                     <div class="card custom-card p-0 overflow-hidden shadow-sm">
                         <div class="list-group list-group-flush">
                             <a href="MyPage" class="list-group-item list-group-item-action p-4 d-flex align-items-center border-0">
-                                <div class="icon-box bg-secondary-subtle text-secondary me-3"><i class="fa-solid fa-user-gear fa-lg"></i></div>
-                                <div><h6 class="mb-1 fw-bold text-dark">내 정보 관리</h6><small class="text-muted">시급 및 매장 정보 확인</small></div>
+                                <div class="icon-box bg-info-subtle text-info me-3"><i class="fa-solid fa-user-gear fa-lg"></i></div>
+                                <div><h6 class="mb-1 fw-bold text-dark">내 정보 수정</h6><small class="text-muted">연락처·요일 수정</small></div>
                                 <i class="fa-solid fa-chevron-right ms-auto text-light"></i>
                             </a>
                             <a href="StoreManage" class="list-group-item list-group-item-action p-4 d-flex align-items-center border-0">
                                 <div class="icon-box bg-warning-subtle text-warning me-3"><i class="fa-solid fa-store fa-lg"></i></div>
-                                <div><h6 class="mb-1 fw-bold text-dark">매장 관리</h6><small class="text-muted">소속 매장 신청 및 관리</small></div>
+                                <div><h6 class="mb-1 fw-bold text-dark">매장 관리</h6><small class="text-muted">소속 매장 신청·확인</small></div>
+                                <i class="fa-solid fa-chevron-right ms-auto text-light"></i>
+                            </a>
+                            <a href="board_list.jsp" class="list-group-item list-group-item-action p-4 d-flex align-items-center border-0">
+                                <div class="icon-box bg-success-subtle text-success me-3"><i class="fa-solid fa-bullhorn fa-lg"></i></div>
+                                <div><h6 class="mb-1 fw-bold text-dark">소통 게시판</h6><small class="text-muted">공지 및 건의사항</small></div>
                                 <i class="fa-solid fa-chevron-right ms-auto text-light"></i>
                             </a>
                         </div>

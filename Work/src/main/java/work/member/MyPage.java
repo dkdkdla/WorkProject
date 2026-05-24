@@ -1,7 +1,6 @@
 package work.member;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -22,15 +21,23 @@ public class MyPage extends HttpServlet {
             return;
         }
 
-        MemberDAO dao = new MemberDAO();
-        // 1. 내 기본 정보 가져오기
-        MemberDTO dto = dao.getMember(userId);
-        // 2. 내 근무지 목록 가져오기
-        ArrayList<String[]> myStores = dao.getMyStoreList(userId);
+        String storeId = (String)session.getAttribute("userStoreId");
 
-        // 3. JSP로 데이터 전달
+        MemberDAO dao = new MemberDAO();
+        MemberDTO dto = dao.getMember(userId);
+
+        // 현재 매장 기준 역할명/시급 조회
+        String roleName  = "";
+        int    storeWage = 0;
+        if (storeId != null && !storeId.isEmpty()) {
+            String[] roleInfo = dao.getStoreRoleInfo(userId, storeId);
+            roleName  = roleInfo[0];
+            try { storeWage = Integer.parseInt(roleInfo[1]); } catch (Exception e) {}
+        }
+
         request.setAttribute("memberDto", dto);
-        request.setAttribute("myStores", myStores);
+        request.setAttribute("roleName",  roleName);
+        request.setAttribute("storeWage", storeWage);
 
         request.getRequestDispatcher("my_page.jsp").forward(request, response);
     }

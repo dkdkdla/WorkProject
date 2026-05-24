@@ -138,7 +138,7 @@ async function handleAction(targetId, type, mode) {
     try {
         const res  = await fetch('SuperAdminApprove', { method: 'POST', body: params });
         const data = await res.json();
-        alert(data.message);
+        showToast(data.message, data.status === 'success' ? 'success' : 'danger');
         if (data.status === 'success') {
             const rowId = (type === 'store' ? 'store-row-' : 'member-row-') + targetId;
             const row = document.getElementById(rowId);
@@ -156,7 +156,7 @@ async function handleAction(targetId, type, mode) {
             });
         }
     } catch (e) {
-        alert('통신 오류가 발생했습니다.');
+        showToast('통신 오류가 발생했습니다.', 'warning');
     }
 }
 </script>

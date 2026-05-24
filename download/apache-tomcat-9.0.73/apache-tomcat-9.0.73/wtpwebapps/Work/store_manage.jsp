@@ -52,9 +52,10 @@
             <span class="badge bg-danger ms-2"><%=pendingJoins.size()%></span>
         </h5>
         <% if (pendingJoins.isEmpty()) { %>
-            <div class="text-center text-muted py-3">
-                <i class="fa-solid fa-check-circle fa-2x mb-2 text-success"></i>
-                <p class="mb-0 small">대기 중인 소속 신청이 없습니다.</p>
+            <div class="text-center text-muted py-4">
+                <i class="fa-solid fa-circle-check fa-3x mb-3 text-success"></i>
+                <p class="mb-0 fw-bold">대기 중인 소속 신청이 없습니다.</p>
+                <small>직원 소속 신청이 들어오면 여기에 표시됩니다.</small>
             </div>
         <% } else { %>
         <div class="table-responsive">
@@ -148,8 +149,9 @@
         </h5>
         <% if (myStores.isEmpty()) { %>
             <div class="text-center text-muted py-4">
-                <i class="fa-solid fa-store-slash fa-2x mb-2"></i>
-                <p class="mb-0 small">등록된 매장이 없습니다.</p>
+                <i class="fa-solid fa-store-slash fa-3x mb-3"></i>
+                <p class="mb-0 fw-bold">등록된 매장이 없습니다.</p>
+                <small>위에서 매장을 검색하여 소속 신청해보세요.</small>
             </div>
         <% } else { %>
         <div class="list-group list-group-flush border rounded-3 overflow-hidden">
@@ -278,7 +280,7 @@ document.getElementById('storeSearchModal').addEventListener('shown.bs.modal', f
 // // 직원: 매장 소속 신청
 async function joinStore() {
     const storeId = document.getElementById('selectedStoreId').value.trim();
-    if (!storeId) { alert('매장을 검색하여 선택해주세요.'); return; }
+    if (!storeId) { showToast('매장을 검색하여 선택해주세요.', 'warning'); return; }
     if (!confirm('해당 매장에 소속 신청하시겠습니까?\n점장 승인 후 소속이 확정됩니다.')) return;
 
     const params = new URLSearchParams();
@@ -287,9 +289,9 @@ async function joinStore() {
     try {
         const res  = await fetch('MyStoreAdd', { method: 'POST', body: params });
         const data = await res.json();
-        alert(data.message);
+        showToast(data.message, data.status === 'success' ? 'success' : 'danger');
         if (data.status === 'success') location.reload();
-    } catch (e) { alert('서버 통신 오류가 발생했습니다.'); }
+    } catch (e) { showToast('서버 통신 오류가 발생했습니다.', 'warning'); }
 }
 
 // 점장: 직원 소속 신청 승인/거절
@@ -305,19 +307,19 @@ async function handleJoin(memId, storeId, mode) {
     try {
         const res  = await fetch('StoreManage', { method: 'POST', body: params });
         const data = await res.json();
-        alert(data.message);
+        showToast(data.message, data.status === 'success' ? 'success' : 'danger');
         if (data.status === 'success') {
             const row = document.getElementById('join-row-' + memId + '-' + storeId);
             if (row) row.remove();
         }
-    } catch (e) { alert('서버 통신 오류가 발생했습니다.'); }
+    } catch (e) { showToast('서버 통신 오류가 발생했습니다.', 'warning'); }
 }
 
 // 점장: 새 매장 생성 신청
 async function requestStore() {
     const storeId   = document.getElementById('storeId').value.trim();
     const storeName = document.getElementById('storeName').value.trim();
-    if (!storeId || !storeName) { alert('매장 코드와 이름을 모두 입력해주세요.'); return; }
+    if (!storeId || !storeName) { showToast('매장 코드와 이름을 모두 입력해주세요.', 'warning'); return; }
     if (!confirm('[' + storeId + '] 매장 생성을 신청하시겠습니까?')) return;
 
     const params = new URLSearchParams();
@@ -327,9 +329,9 @@ async function requestStore() {
     try {
         const res  = await fetch('StoreManage', { method: 'POST', body: params });
         const data = await res.json();
-        alert(data.message);
+        showToast(data.message, data.status === 'success' ? 'success' : 'danger');
         if (data.status === 'success') location.reload();
-    } catch (e) { alert('서버 통신 오류가 발생했습니다.'); }
+    } catch (e) { showToast('서버 통신 오류가 발생했습니다.', 'warning'); }
 }
 
 // 매장 삭제
@@ -338,9 +340,9 @@ async function deleteStore(userId, storeId) {
     try {
         const res  = await fetch('MyStoreDelete?id=' + userId + '&storeId=' + storeId);
         const data = await res.json();
-        alert(data.message);
+        showToast(data.message, data.status === 'success' ? 'success' : 'danger');
         if (data.status === 'success') location.reload();
-    } catch (e) { alert('서버 통신 오류가 발생했습니다.'); }
+    } catch (e) { showToast('서버 통신 오류가 발생했습니다.', 'warning'); }
 }
 
 // 검색창 외부 클릭 시 닫기
