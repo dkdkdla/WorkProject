@@ -115,6 +115,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="<%=request.getContextPath()%>/css/style.css">
     <link rel="icon" type="image/png" href="<%=request.getContextPath()%>/jlogo.png">
+    <style>
+        .form-check-input[type="radio"] { display: none; }
+        .form-check-input[type="radio"]:checked + label.btn-outline-success { background-color: #198754 !important; color: white !important; }
+        .form-check-input[type="radio"]:checked + label.btn-outline-secondary { background-color: #6c757d !important; color: white !important; }
+    </style>
 </head>
 <body>
 
@@ -172,39 +177,51 @@
         <div class="col-lg-8">
             <div class="card custom-card p-0 overflow-hidden shadow-sm">
                 <div class="table-responsive">
-                    <table class="table custom-table mb-0 align-middle text-center">
+                    <table class="table custom-table mb-0 align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th class="ps-4 text-start">날짜 / 시간</th>
-                                <th>직원명</th>
-                                <th>상태</th>
-                                <th>관리</th>
+                                <th class="ps-4">직원명</th>
+                                <th>날짜 / 시간</th>
+                                <th class="text-center">상태</th>
+                                <th class="text-center d-none d-md-table-cell">관리</th>
                             </tr>
                         </thead>
                         <tbody>
                             <% if(list.isEmpty()) { %>
                                 <tr><td colspan="4" class="text-center py-5 text-muted">기록이 없습니다.</td></tr>
                             <% } %>
-                            <% for(AttendanceDTO dto : list) { 
-                                String fullDate = dto.getAttTime(); 
+                            <% for(AttendanceDTO dto : list) {
+                                String fullDate = dto.getAttTime();
                                 String dDate = fullDate.substring(0, 10);
                                 String dTime = fullDate.substring(11, 16);
+                                boolean isIn = "출근".equals(dto.getAttType());
                             %>
-                            <tr>
-                                <td class="ps-4 text-start">
+                            <tr class="<%=isIn ? "" : ""%>">
+                                <td class="ps-4">
+                                    <span class="fw-bold text-dark"><%=dto.getMemberId()%></span>
+                                </td>
+                                <td>
                                     <div class="fw-bold text-dark"><%=dDate%></div>
                                     <small class="text-muted"><%=dTime%></small>
                                 </td>
-                                <td class="fw-bold"><%=dto.getStoreName()%></td>
-                                <td>
-                                    <% if("출근".equals(dto.getAttType())) { %>
-                                        <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill">출근</span>
-                                    <% } else { %>
-                                        <span class="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill">퇴근</span>
-                                    <% } %>
+                                <td class="text-center">
+                                    <%if (isIn) {%>
+                                        <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill fw-bold">
+                                            <i class="fa-solid fa-arrow-right-to-bracket me-1"></i>출근
+                                        </span>
+                                    <%} else {%>
+                                        <span class="badge bg-secondary-subtle text-secondary px-3 py-2 rounded-pill fw-bold">
+                                            <i class="fa-solid fa-arrow-right-from-bracket me-1"></i>퇴근
+                                        </span>
+                                    <%}%>
+                                    <%-- 모바일에서는 버튼을 상태 아래에 --%>
+                                    <div class="d-md-none mt-1">
+                                        <button class="btn btn-xs btn-outline-warning border-0 me-1" onclick="openEditModal('<%=dto.getIdx()%>', '<%=dDate%>', '<%=dTime%>', '<%=dto.getAttType()%>', '<%=dto.getMemberId()%>')">✏️</button>
+                                        <button class="btn btn-xs btn-outline-danger border-0" onclick="deleteRecord('<%=dto.getIdx()%>')">🗑️</button>
+                                    </div>
                                 </td>
-                                <td>
-                                    <button class="btn btn-sm btn-outline-warning border-0" onclick="openEditModal('<%=dto.getIdx()%>', '<%=dDate%>', '<%=dTime%>', '<%=dto.getAttType()%>', '<%=dto.getMemberId()%>')">✏️</button>
+                                <td class="text-center d-none d-md-table-cell">
+                                    <button class="btn btn-sm btn-outline-warning border-0 me-1" onclick="openEditModal('<%=dto.getIdx()%>', '<%=dDate%>', '<%=dTime%>', '<%=dto.getAttType()%>', '<%=dto.getMemberId()%>')">✏️</button>
                                     <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteRecord('<%=dto.getIdx()%>')">🗑️</button>
                                 </td>
                             </tr>
@@ -236,49 +253,66 @@
 </div>
 
 <div class="modal fade" id="attModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold" id="modalTitle">근태 기록 관리</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalTitle">
+                    <i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i>근태 기록 추가
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form action="AdminAttendanceAction" method="post">
-                <div class="modal-body">
+                <div class="modal-body pt-3">
                     <input type="hidden" name="mode" id="modalMode" value="add">
                     <input type="hidden" name="idx" id="modalIdx">
-                    
                     <input type="hidden" name="returnStartDate" value="<%=startDate%>">
                     <input type="hidden" name="returnEndDate" value="<%=endDate%>">
                     <input type="hidden" name="returnSearchMemId" value="<%=searchMemId%>">
 
+                    <%-- 직원 선택 --%>
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">직원 선택</label>
+                        <label class="form-label small fw-bold text-secondary">직원 선택</label>
                         <select name="memId" id="modalMemId" class="form-select" required>
                             <% for(MemberDTO m : memberList) { %>
-                                <option value="<%=m.getId()%>"><%=m.getName()%>(<%=m.getId()%>)</option>
+                                <option value="<%=m.getId()%>"><%=m.getName()%> (<%=m.getId()%>)</option>
                             <% } %>
                         </select>
                     </div>
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <label class="form-label small fw-bold">날짜</label>
-                            <input type="date" name="date" id="modalDate" class="form-control" required>
+
+                    <%-- 출퇴근 구분 --%>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">구분</label>
+                        <div class="d-flex gap-2">
+                            <div class="form-check form-check-inline flex-fill">
+                                <input class="form-check-input" type="radio" name="type" id="typeIn" value="출근" checked>
+                                <label class="form-check-label btn btn-outline-success w-100 fw-bold" for="typeIn">
+                                    <i class="fa-solid fa-arrow-right-to-bracket me-1"></i>출근
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline flex-fill">
+                                <input class="form-check-input" type="radio" name="type" id="typeOut" value="퇴근">
+                                <label class="form-check-label btn btn-outline-secondary w-100 fw-bold" for="typeOut">
+                                    <i class="fa-solid fa-arrow-right-from-bracket me-1"></i>퇴근
+                                </label>
+                            </div>
                         </div>
-                        <div class="col-6">
-                            <label class="form-label small fw-bold">시간</label>
+                    </div>
+
+                    <%-- 날짜+시간 한 줄로 --%>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">날짜 및 시간</label>
+                        <div class="input-group">
+                            <input type="date" name="date" id="modalDate" class="form-control" required>
                             <input type="time" name="time" id="modalTime" class="form-control" required>
                         </div>
-                    </div>
-                    <div class="mt-3">
-                        <label class="form-label small fw-bold">상태</label>
-                        <select name="type" id="modalType" class="form-select">
-                            <option value="출근">출근</option>
-                            <option value="퇴근">퇴근</option>
-                        </select>
+                        <small class="text-muted">날짜와 시간을 함께 선택하세요.</small>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary fw-bold px-4">저장하기</button>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light fw-bold px-4" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" class="btn btn-primary fw-bold px-4">
+                        <i class="fa-solid fa-check me-1"></i>저장하기
+                    </button>
                 </div>
             </form>
         </div>

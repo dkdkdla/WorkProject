@@ -44,14 +44,31 @@
         </a>
     </div>
 
-    <!-- 검색 -->
+    <!-- 검색 + 필터 -->
     <div class="card custom-card p-4 mb-4 shadow-sm border-0">
-        <div class="input-group">
-            <span class="input-group-text bg-white border-end-0">
-                <i class="fa-solid fa-magnifying-glass text-muted"></i>
-            </span>
-            <input type="text" id="searchInput" class="form-control border-start-0 ps-0"
-                placeholder="이름이나 전화번호로 검색..." oninput="filterTable()">
+        <div class="row g-2">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0">
+                        <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                    </span>
+                    <input type="text" id="searchInput" class="form-control border-start-0 ps-0"
+                        placeholder="이름이나 전화번호로 검색..." oninput="filterTable()">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select id="roleFilter" class="form-select" onchange="filterTable()">
+                    <option value="">전체 역할</option>
+                    <option value="unassigned">역할 미지정</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select id="typeFilter" class="form-select" onchange="filterTable()">
+                    <option value="">전체 (점장+직원)</option>
+                    <option value="staff">직원만</option>
+                    <option value="admin">점장만</option>
+                </select>
+            </div>
         </div>
     </div>
 
@@ -160,6 +177,7 @@ async function loadRoleOptions() {
         const data = await res.json();
 
         if (data.status === 'success') {
+            const roleFilterEl = document.getElementById('roleFilter');
             document.querySelectorAll('.role-select').forEach(function(select) {
                 const currentVal = select.dataset.current || '0';
                 data.list.forEach(role => {
@@ -170,6 +188,13 @@ async function loadRoleOptions() {
                     if (String(role.roleId) === String(currentVal)) opt.selected = true;
                     select.appendChild(opt);
                 });
+            });
+            // 역할 필터 드롭다운에도 추가
+            data.list.forEach(role => {
+                const opt = document.createElement('option');
+                opt.value = role.roleName;
+                opt.text  = role.roleName;
+                roleFilterEl.appendChild(opt);
             });
         }
     } catch (e) { console.error(e); }
@@ -214,12 +239,35 @@ async function assignRole(memId, select) {
 }
 
 function filterTable() {
-    const filter = document.getElementById('searchInput').value.toUpperCase();
-    const rows   = document.querySelectorAll('#memberTable tbody tr');
+    const nameFilter = document.getElementById('searchInput').value.toUpperCase();
+    const roleFilter = document.getElementById('roleFilter').value;
+    const typeFilter = document.getElementById('typeFilter').value;
+    const rows = document.querySelectorAll('#memberTable tbody tr');
+
     rows.forEach(tr => {
-        const name  = tr.cells[0] ? tr.cells[0].innerText : '';
-        const phone = tr.cells[1] ? tr.cells[1].innerText : '';
-        tr.style.display = (name.toUpperCase().includes(filter) || phone.toUpperCase().includes(filter)) ? '' : 'none';
+        if (tr.cells.length < 2) return;
+        const name    = tr.cells[0] ? tr.cells[0].innerText : '';
+        const phone   = tr.cells[1] ? tr.cells[1].innerText : '';
+        const roleSelect = tr.querySelector('.role-select');
+        const isAdmin = tr.cells[0].innerText.includes('점장');
+
+        // 이름/전화 검색
+        const nameMatch = name.toUpperCase().includes(nameFilter) || phone.toUpperCase().includes(nameFilter);
+
+        // 역할 필터
+        let roleMatch = true;
+        if (roleFilter === 'unassigned') {
+            roleMatch = roleSelect && roleSelect.value === '0';
+        } else if (roleFilter !== '') {
+            roleMatch = roleSelect && roleSelect.options[roleSelect.selectedIndex].text === roleFilter;
+        }
+
+        // 타입 필터
+        let typeMatch = true;
+        if (typeFilter === 'staff')  typeMatch = !isAdmin;
+        if (typeFilter === 'admin')  typeMatch = isAdmin;
+
+        tr.style.display = (nameMatch && roleMatch && typeMatch) ? '' : 'none';
     });
 }
 
