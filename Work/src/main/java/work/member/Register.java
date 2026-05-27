@@ -25,10 +25,11 @@ public class Register extends HttpServlet {
         String name = request.getParameter("name");
         String phone = request.getParameter("phone");
         String role = request.getParameter("role"); 
-        String storeIds = request.getParameter("storeIds");
-        String storeId  = request.getParameter("storeId");
-        String birth    = request.getParameter("birth");
-        String workDays = request.getParameter("workDays");
+        String storeIds     = request.getParameter("storeIds");
+        String storeId      = request.getParameter("storeId");
+        String birth        = request.getParameter("birth");
+        String workDays     = request.getParameter("workDays");
+        String storeWorkDays = request.getParameter("storeWorkDays"); // 형식: store01:월,화|store02:목,금
 
         // storeIds 우선, 없으면 storeId 사용
         if (storeIds == null || storeIds.trim().isEmpty()) {
@@ -91,6 +92,13 @@ public class Register extends HttpServlet {
         dto.setRole(role);
         dto.setStoreId(storeId);
         dto.setBirth(birth.trim());
+        // 첫 번째 매장 요일을 기본 workDays로 저장
+        if (storeWorkDays != null && !storeWorkDays.isEmpty()) {
+            String[] parts = storeWorkDays.split("\\|");
+            if (parts.length > 0 && parts[0].contains(":")) {
+                workDays = parts[0].split(":")[1]; // 첫 번째 매장 요일
+            }
+        }
         dto.setWorkDays(workDays != null ? workDays.trim() : "");
 
 

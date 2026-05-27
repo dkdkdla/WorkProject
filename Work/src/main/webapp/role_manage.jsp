@@ -40,17 +40,40 @@
     <div class="card border-0 shadow-sm p-4 mb-4" style="border-top: 4px solid #4e73df !important;">
         <h5 class="fw-bold mb-3"><i class="fa-solid fa-plus-circle me-2 text-primary"></i>새 역할 추가</h5>
         <div class="row g-3">
-            <div class="col-md-5">
-                <input type="text" id="newRoleName" class="form-control" placeholder="역할 이름 (예: 홀 직원)">
-            </div>
             <div class="col-md-4">
-                <div class="input-group">
-                    <input type="number" id="newWage" class="form-control" placeholder="시급" min="0">
-                    <span class="input-group-text">원/시</span>
-                </div>
-                <small class="text-muted" style="font-size:11px;">예: 10320 (2026년 최저임금)</small>
+                <label class="form-label small fw-bold text-secondary">역할 이름</label>
+                <input type="text" id="newRoleName" class="form-control" placeholder="예: 홀 직원">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-secondary">기본 시급</label>
+                <div class="input-group">
+                    <input type="number" id="newWage" class="form-control" placeholder="10030" min="0"
+                        oninput="calcAutoWage()">
+                    <span class="input-group-text small">원</span>
+                </div>
+                <small class="text-muted" style="font-size:11px;">예: 10030 (최저임금)</small>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-secondary">
+                    야간 시급 <span class="badge bg-dark ms-1" style="font-size:10px;">×1.5</span>
+                </label>
+                <div class="input-group">
+                    <input type="number" id="newNightWage" class="form-control bg-light" placeholder="자동계산" min="0" readonly>
+                    <span class="input-group-text small">원</span>
+                </div>
+                <small class="text-muted" style="font-size:11px;">22:00~06:00</small>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-secondary">
+                    주말 시급 <span class="badge bg-warning text-dark ms-1" style="font-size:10px;">×1.5</span>
+                </label>
+                <div class="input-group">
+                    <input type="number" id="newWeekendWage" class="form-control bg-light" placeholder="자동계산" min="0" readonly>
+                    <span class="input-group-text small">원</span>
+                </div>
+                <small class="text-muted" style="font-size:11px;">토·일요일</small>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
                 <button type="button" onclick="addRole()" class="btn btn-primary fw-bold w-100">추가</button>
             </div>
         </div>
@@ -69,24 +92,49 @@
         <div class="table-responsive">
             <table class="table align-middle mb-0">
                 <thead class="table-light">
-                    <tr><th>역할 이름</th><th>시급</th><th class="text-center">관리</th></tr>
+                    <tr>
+                        <th>역할 이름</th>
+                        <th>기본 시급</th>
+                        <th>야간 시급 <span class="badge bg-dark ms-1" style="font-size:10px;">×1.5</span></th>
+                        <th>주말 시급 <span class="badge bg-warning text-dark ms-1" style="font-size:10px;">×1.5</span></th>
+                        <th class="text-center">관리</th>
+                    </tr>
                 </thead>
                 <tbody id="roleTableBody">
-                    <% for (String[] r : roleList) { %>
+                    <% for (String[] r : roleList) {
+                        int wage = Integer.parseInt(r[2]);
+                        int nightWage   = (int)(wage * 1.5);
+                        int weekendWage = (int)(wage * 1.5);
+                    %>
                     <tr id="role-row-<%=r[0]%>">
                         <td>
                             <input type="text" class="form-control form-control-sm border-0 bg-transparent fw-bold"
                                 id="roleName-<%=r[0]%>" value="<%=r[1]%>">
                         </td>
                         <td>
-                            <div class="input-group input-group-sm" style="max-width:160px;">
+                            <div class="input-group input-group-sm" style="max-width:140px;">
                                 <input type="number" class="form-control border-0 bg-transparent fw-bold text-primary"
-                                    id="roleWage-<%=r[0]%>" value="<%=r[2]%>">
-                                <span class="input-group-text bg-transparent border-0 text-muted">원/시</span>
+                                    id="roleWage-<%=r[0]%>" value="<%=r[2]%>"
+                                    oninput="updateAutoWage('<%=r[0]%>', this.value)">
+                                <span class="input-group-text bg-transparent border-0 text-muted small">원/시</span>
                             </div>
                             <small class="text-muted" style="font-size:11px;">
-                                월 160h 기준: <%=String.format("%,d", Integer.parseInt(r[2]) * 160)%>원
+                                월 160h: <%=String.format("%,d", wage * 160)%>원
                             </small>
+                        </td>
+                        <td>
+                            <div class="input-group input-group-sm" style="max-width:140px;">
+                                <input type="number" class="form-control border-0 bg-light"
+                                    id="roleNightWage-<%=r[0]%>" value="<%=nightWage%>" readonly>
+                                <span class="input-group-text bg-transparent border-0 text-muted small">원/시</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="input-group input-group-sm" style="max-width:140px;">
+                                <input type="number" class="form-control border-0 bg-light"
+                                    id="roleWeekendWage-<%=r[0]%>" value="<%=weekendWage%>" readonly>
+                                <span class="input-group-text bg-transparent border-0 text-muted small">원/시</span>
+                            </div>
                         </td>
                         <td class="text-center">
                             <button class="btn btn-sm btn-outline-primary fw-bold me-1"
@@ -110,6 +158,22 @@
 <%@ include file="footer.jsp" %>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+// 기본 시급 입력 시 야간/주말 자동 계산 (추가 폼)
+function calcAutoWage() {
+    const base = parseInt(document.getElementById('newWage').value) || 0;
+    document.getElementById('newNightWage').value   = Math.floor(base * 1.5);
+    document.getElementById('newWeekendWage').value = Math.floor(base * 1.5);
+}
+
+// 기존 역할 시급 변경 시 야간/주말 자동 계산
+function updateAutoWage(roleId, val) {
+    const base = parseInt(val) || 0;
+    const nightEl   = document.getElementById('roleNightWage-'   + roleId);
+    const weekendEl = document.getElementById('roleWeekendWage-' + roleId);
+    if (nightEl)   nightEl.value   = Math.floor(base * 1.5);
+    if (weekendEl) weekendEl.value = Math.floor(base * 1.5);
+}
+
 // 역할 추가
 async function addRole() {
     const roleName = document.getElementById('newRoleName').value.trim();

@@ -149,22 +149,10 @@
                     <input type="hidden" name="storeIds" id="storeIdsHidden">
                     <small id="storeHint" class="text-muted hint-text">없으면 나중에 매장 관리에서 신청 가능합니다.</small>
                 </div>
-                <div class="mb-4" id="workDaysWrap">
-                    <label class="form-label">근무 가능 요일 <span class="text-muted">(선택)</span></label>
-                    <div class="d-flex flex-wrap gap-2 mt-1">
-                        <% String[] days = {"월", "화", "수", "목", "금", "토", "일"}; %>
-                        <% for (String day : days) { %>
-                        <div class="m-0">
-                            <input class="form-check-input day-check d-none" type="checkbox"
-                                id="day<%=day%>" value="<%=day%>">
-                            <label class="btn btn-sm btn-outline-primary px-3 py-2 fw-bold"
-                                for="day<%=day%>"><%=day%></label>
-                        </div>
-                        <% } %>
-                    </div>
-                    <input type="hidden" name="workDays" id="workDaysHidden">
-                    <small class="text-muted hint-text mt-1 d-block">선택하지 않으면 협의 후 결정으로 처리됩니다.</small>
-                </div>
+                <%-- 매장별 근무 요일은 JS로 동적 생성 --%>
+                <div id="storeWorkDaysContainer" class="mb-4"></div>
+                <input type="hidden" name="workDays" id="workDaysHidden">
+                <input type="hidden" name="storeWorkDays" id="storeWorkDaysHidden">
 
 
 
@@ -234,15 +222,16 @@
             selectedStores = [];
             document.getElementById('storeIdsHidden').value = "";
             document.getElementById('selectedStoreTags').innerHTML = "";
-            document.getElementById('workDaysWrap').style.display = "none";
+            document.getElementById('storeWorkDaysContainer').innerHTML = "";
+            document.getElementById('storeWorkDaysHidden').value = "";
+            document.getElementById('workDaysHidden').value = "";
         } else {
-            // 직원: 매장 검색 표시, 시급 표시
+            // 직원: 매장 검색 표시
             adminNotice.style.display = "none";
             storeWrap.style.display   = "block";
             storeLabel.innerHTML      = '소속 매장 <span class="text-muted">(선택)</span>';
             storeHint.innerText       = "없으면 나중에 매장 관리에서 신청 가능합니다.";
             storeHint.className       = "text-muted hint-text";
-            document.getElementById('workDaysWrap').style.display = "block";
         }
     }
 
@@ -379,12 +368,17 @@
 
 
 
-    // 선택된 매장 태그 렌더링
+    // 선택된 매장 태그 + 요일 렌더링
     function renderStoreTags() {
-        const tagContainer = document.getElementById('selectedStoreTags');
-        tagContainer.innerHTML = '';
+        const tagContainer  = document.getElementById('selectedStoreTags');
+        const daysContainer = document.getElementById('storeWorkDaysContainer');
+        tagContainer.innerHTML  = '';
+        daysContainer.innerHTML = '';
+
+        const allDays = ['월','화','수','목','금','토','일'];
 
         selectedStores.forEach(function(store) {
+            // 태그
             const tag = document.createElement('span');
             tag.className = 'badge bg-primary d-flex align-items-center gap-1 px-3 py-2';
             tag.style.fontSize = '13px';
@@ -392,10 +386,64 @@
                 '<button type="button" class="btn-close btn-close-white ms-1" ' +
                 'style="font-size:10px;" onclick="removeStore(\'' + store.id + '\')"></button>';
             tagContainer.appendChild(tag);
+
+            // 해당 매장 요일 선택 섹션
+            const section = document.createElement('div');
+            section.className = 'p-3 bg-light rounded-3 mb-2';
+            section.id = 'days-section-' + store.id;
+
+            let btnHtml = allDays.map(day => `
+                <div class="m-0">
+                    <input class="d-none store-day-check" type="checkbox"
+                        id="day-${store.id}-${day}" value="${day}"
+                        data-store="${store.id}"
+                        onchange="updateStoreWorkDays()">
+                    <label class="btn btn-sm btn-outline-primary px-3 py-2 fw-bold"
+                        for="day-${store.id}-${day}">${day}</label>
+                </div>`).join('');
+
+            section.innerHTML = `
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <small class="fw-bold text-dark">
+                        <i class="fa-solid fa-store me-1 text-primary"></i>${store.name} 근무 요일
+                    </small>
+                    <small class="text-muted">선택 안 하면 협의 후 결정</small>
+                </div>
+                <div class="d-flex flex-wrap gap-2">${btnHtml}</div>`;
+
+            daysContainer.appendChild(section);
         });
 
-        // hidden input 업데이트 (쉼표 구분)
+        // 매장 없으면 컨테이너 초기화
+        if (selectedStores.length === 0) {
+            daysContainer.innerHTML = '';
+        }
+
+        // hidden input 업데이트
         document.getElementById('storeIdsHidden').value = selectedStores.map(s => s.id).join(',');
+        updateStoreWorkDays();
+    }
+
+    // 매장별 요일 → hidden input 업데이트
+    // 형식: store01:월,화,수|store02:목,금
+    function updateStoreWorkDays() {
+        const result = selectedStores.map(store => {
+            const checked = Array.from(
+                document.querySelectorAll('.store-day-check[data-store="' + store.id + '"]:checked')
+            ).map(c => c.value);
+            return store.id + ':' + checked.join(',');
+        }).join('|');
+
+        document.getElementById('storeWorkDaysHidden').value = result;
+
+        // 기존 workDaysHidden도 첫 번째 매장 기준으로 채움 (하위 호환)
+        const firstStore = selectedStores[0];
+        if (firstStore) {
+            const firstChecked = Array.from(
+                document.querySelectorAll('.store-day-check[data-store="' + firstStore.id + '"]:checked')
+            ).map(c => c.value);
+            document.getElementById('workDaysHidden').value = firstChecked.join(',');
+        }
     }
 
     // 매장 태그 제거

@@ -138,12 +138,7 @@
                                 <span class="fw-bold text-dark small">근태 현황</span>
                             </a>
                         </div>
-                        <div class="col-6 col-md-3">
-                            <a href="AdminMemberList" class="card custom-card action-card p-3 h-100 text-center shadow-sm text-decoration-none">
-                                <div class="icon-box bg-info-subtle text-info mx-auto mb-2"><i class="fa-solid fa-user-gear fa-lg"></i></div>
-                                <span class="fw-bold text-dark small">직원 관리</span>
-                            </a>
-                        </div>
+
                         <div class="col-6 col-md-3">
                             <a href="qr_view.jsp" class="card custom-card action-card p-3 h-100 text-center shadow-sm text-decoration-none">
                                 <div class="icon-box bg-success-subtle text-success mx-auto mb-2"><i class="fa-solid fa-qrcode fa-lg"></i></div>
@@ -157,9 +152,9 @@
                             </a>
                         </div>
                         <div class="col-6 col-md-3">
-                            <a href="StoreManage" class="card custom-card action-card p-3 h-100 text-center shadow-sm text-decoration-none position-relative">
-                                <div class="icon-box bg-danger-subtle text-danger mx-auto mb-2"><i class="fa-solid fa-store fa-lg"></i></div>
-                                <span class="fw-bold text-dark small">매장 관리</span>
+                            <a href="StoreMemberManage" class="card custom-card action-card p-3 h-100 text-center shadow-sm text-decoration-none position-relative">
+                                <div class="icon-box bg-primary-subtle text-primary mx-auto mb-2"><i class="fa-solid fa-store fa-lg"></i></div>
+                                <span class="fw-bold text-dark small">매장 및 직원 관리</span>
                                 <% if (pendingJoinCount > 0) { %>
                                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:0.65rem;"><%=pendingJoinCount%></span>
                                 <% } %>
@@ -234,7 +229,7 @@
                             </a>
                         </div>
                         <div class="col-6 col-md-3">
-                            <a href="StoreManage" class="card custom-card p-4 d-flex flex-column align-items-center justify-content-center h-100 shadow-sm text-decoration-none text-center">
+                            <a href="StoreMemberManage" class="card custom-card p-4 d-flex flex-column align-items-center justify-content-center h-100 shadow-sm text-decoration-none text-center">
                                 <div class="icon-box bg-warning text-white shadow mb-2"><i class="fa-solid fa-store fa-lg"></i></div>
                                 <h6 class="mb-1 fw-bold text-dark">매장 관리</h6>
                                 <small class="text-muted">소속 매장 신청</small>

@@ -1,0 +1,541 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="work.dto.MemberDTO" %>
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="java.util.ArrayList" %>
+<%
+    String loggedInId   = (String)session.getAttribute("userId");
+    String userRolesess = (String)session.getAttribute("userRole");
+    String currentStoreId = (String)session.getAttribute("userStoreId");
+    if (currentStoreId == null) currentStoreId = "";
+
+    if (!"A".equals(userRolesess != null ? userRolesess.trim() : "")) {
+        response.sendRedirect("login.jsp");
+        return;
+    }
+
+    ArrayList<MemberDTO> memberList = (ArrayList<MemberDTO>)request.getAttribute("memberList");
+    if (memberList == null) memberList = new ArrayList<>();
+
+    ArrayList<String[]> myStores = (ArrayList<String[]>)request.getAttribute("myStores");
+    if (myStores == null) myStores = new ArrayList<>();
+
+    ArrayList<MemberDTO> pendingList = (ArrayList<MemberDTO>)request.getAttribute("pendingList");
+    if (pendingList == null) pendingList = new ArrayList<>();
+%>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>매장 · 직원 관리 - AlbaPass</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="<%=request.getContextPath()%>/css/style.css">
+    <link rel="icon" type="image/png" href="<%=request.getContextPath()%>/jlogo.png">
+    <style>
+        .store-item {
+            cursor: pointer;
+            border-left: 4px solid transparent;
+            transition: all 0.2s;
+        }
+        .store-item:hover { background-color: #f0f4ff; border-left-color: #4e73df; }
+        .store-item.active { background-color: #e8edff; border-left-color: #4e73df; font-weight: 700; }
+        .store-panel { min-height: 500px; }
+        .member-card { transition: all 0.2s; }
+        .member-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }
+        .wage-badge { background: #f0f4ff; color: #4e73df; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+        .empty-state { min-height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+
+<%@ include file="navbar.jsp" %>
+
+<div class="container-fluid mt-4 mb-5 px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold text-dark mb-0">
+            <i class="fa-solid fa-store me-2 text-primary"></i>매장 · 직원 관리
+        </h3>
+        <a href="default.jsp" class="btn btn-outline-secondary btn-sm fw-bold px-3">
+            <i class="fa-solid fa-arrow-left me-1"></i> 대시보드로
+        </a>
+    </div>
+
+    <div class="row g-4">
+
+        <%-- 좌측: 매장 목록 --%>
+        <div class="col-12 col-lg-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 pt-4 pb-2 px-4">
+                    <h6 class="fw-bold text-dark mb-0">
+                        <i class="fa-solid fa-store me-2 text-primary"></i>내 매장
+                        <span class="badge bg-primary ms-1"><%=myStores.size()%></span>
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <% if (myStores.isEmpty()) { %>
+                    <div class="text-center text-muted py-5 px-3">
+                        <i class="fa-solid fa-store-slash fa-2x mb-2 d-block"></i>
+                        <small>등록된 매장이 없습니다.</small>
+                    </div>
+                    <% } else {
+                        for (int i = 0; i < myStores.size(); i++) {
+                            String[] store = myStores.get(i);
+                            boolean isActive = store[0].equals(currentStoreId);
+                    %>
+                    <div class="store-item p-3 px-4 <%=isActive ? "active" : ""%>"
+                        onclick="selectStore('<%=store[0]%>', '<%=store[1]%>')"
+                        id="store-item-<%=store[0]%>">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <div class="fw-bold text-dark"><%=store[1]%></div>
+                                <small class="text-muted"><%=store[0]%></small>
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-muted small"></i>
+                        </div>
+                    </div>
+                    <%  }
+                    } %>
+
+                    <%-- 매장 추가 신청 버튼 --%>
+                    <div class="p-3 border-top">
+                        <button class="btn btn-outline-primary btn-sm w-100 fw-bold"
+                            data-bs-toggle="modal" data-bs-target="#addStoreModal">
+                            <i class="fa-solid fa-plus me-1"></i> 새 매장 생성 신청
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <%-- 우측: 선택된 매장 직원 목록 + 설정 --%>
+        <div class="col-12 col-lg-9">
+
+            <%-- 매장 헤더 --%>
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body py-3 px-4">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <h5 class="fw-bold mb-0" id="selectedStoreName">
+                                <i class="fa-solid fa-store me-2 text-primary"></i><%=currentStoreId.isEmpty() ? "매장을 선택하세요" : currentStoreId%>
+                            </h5>
+                            <small class="text-muted" id="memberCountText">직원 <%=memberList.size()%>명</small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-sm btn-outline-warning fw-bold"
+                                data-bs-toggle="modal" data-bs-target="#storeSettingModal">
+                                <i class="fa-solid fa-gear me-1"></i> 매장 설정
+                            </button>
+                            <a href="RoleManage" class="btn btn-sm btn-outline-primary fw-bold">
+                                <i class="fa-solid fa-tags me-1"></i> 역할 관리
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <%-- 검색 + 필터 --%>
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body py-3 px-4">
+                    <div class="row g-2">
+                        <div class="col-md-5">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white border-end-0">
+                                    <i class="fa-solid fa-magnifying-glass text-muted"></i>
+                                </span>
+                                <input type="text" id="searchInput" class="form-control border-start-0"
+                                    placeholder="이름 또는 전화번호 검색" oninput="filterMembers()">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="roleFilter" class="form-select form-select-sm" onchange="filterMembers()">
+                                <option value="">전체 역할</option>
+                                <option value="unassigned">역할 미지정</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select id="typeFilter" class="form-select form-select-sm" onchange="filterMembers()">
+                                <option value="">전체</option>
+                                <option value="staff">직원만</option>
+                                <option value="admin">점장만</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <%-- 직원 목록 --%>
+            <div class="card border-0 shadow-sm store-panel">
+                <div class="card-body p-0">
+                    <% if (memberList.isEmpty()) { %>
+                    <div class="empty-state text-muted">
+                        <i class="fa-solid fa-users fa-3x mb-3 text-light"></i>
+                        <p class="fw-bold mb-1">등록된 직원이 없습니다.</p>
+                        <small>직원이 소속 신청 후 승인하면 표시됩니다.</small>
+                    </div>
+                    <% } else { %>
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0" id="memberTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">이름</th>
+                                    <th>전화번호</th>
+                                    <th>역할 / 시급</th>
+                                    <th>근무 요일</th>
+                                    <th class="text-center">관리</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+<%
+    for (MemberDTO m : memberList) {
+        boolean isSelf  = m.getId().equals(loggedInId);
+        boolean isAdmin = "A".equals(m.getRole() != null ? m.getRole().trim() : "");
+        boolean noRole  = !isAdmin && m.getRoleId() == 0;
+        String rowClass = isSelf ? "table-info-subtle" : (noRole ? "table-warning" : "");
+%>
+                            <tr class="<%=rowClass%>">
+                                <td class="ps-4">
+                                    <span class="fw-bold text-dark"><%=m.getName()%></span>
+                                    <%if (isAdmin) {%><span class="badge bg-primary ms-1" style="font-size:0.7rem;">점장</span><%}%>
+                                    <%if (!isAdmin) {%><span class="badge bg-warning text-dark ms-1" style="font-size:0.7rem;">직원</span><%}%>
+                                    <%if (noRole) {%><span class="badge bg-danger ms-1" style="font-size:0.7rem;">역할 미지정</span><%}%>
+                                    <%if (isSelf) {%><span class="badge bg-dark ms-1" style="font-size:0.7rem;">나</span><%}%>
+                                </td>
+                                <td class="text-muted"><%=m.getPhone()%></td>
+                                <td style="min-width:200px;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <select class="form-select form-select-sm role-select"
+                                            id="roleSelect-<%=m.getId()%>"
+                                            onchange="assignRole('<%=m.getId()%>', this)"
+                                            data-current="<%=m.getRoleId()%>"
+                                            style="max-width:150px;">
+                                            <option value="0">-- 미지정 --</option>
+                                        </select>
+                                        <small class="text-primary fw-bold text-nowrap" id="wage-<%=m.getId()%>">
+                                            <%=m.getHourlyWage() > 0 ? String.format("%,d", m.getHourlyWage()) + "원" : "-"%>
+                                        </small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <%if (m.getWorkDays() != null && !m.getWorkDays().isEmpty()) {
+                                        for (String day : m.getWorkDays().split(",")) {%>
+                                            <span class="badge bg-primary me-1"><%=day.trim()%></span>
+                                    <%  }
+                                    } else {%>
+                                        <span class="text-muted small">미정</span>
+                                    <%}%>
+                                </td>
+                                <td class="text-center">
+                                    <%if (!isSelf) {%>
+                                        <a href="javascript:void(0);"
+                                            onclick="removeStaff('<%=m.getId()%>', '<%=m.getName()%>')"
+                                            class="btn btn-sm btn-danger fw-bold">
+                                            <i class="fa-solid fa-user-minus"></i> 제외
+                                        </a>
+                                    <%} else {%>
+                                        <button class="btn btn-sm btn-secondary fw-bold" disabled>
+                                            <i class="fa-solid fa-lock"></i> 고정
+                                        </button>
+                                    <%}%>
+                                </td>
+                            </tr>
+<%  } %>
+                            </tbody>
+                        </table>
+                    </div>
+                    <% } %>
+
+                    <%-- 소속 신청 대기 섹션 --%>
+                    <div class="border-top px-4 py-3">
+                        <h6 class="fw-bold text-muted small text-uppercase mb-2">
+                            <i class="fa-solid fa-clock me-1"></i>소속 신청 대기
+                            <%if (!pendingList.isEmpty()) {%>
+                            <span class="badge bg-danger ms-1"><%=pendingList.size()%></span>
+                            <%}%>
+                        </h6>
+                        <%if (pendingList.isEmpty()) {%>
+                        <small class="text-muted">승인 대기 중인 직원이 없습니다.</small>
+                        <%} else {
+                            for (MemberDTO p : pendingList) {%>
+                        <div class="d-flex align-items-center justify-content-between py-2 border-bottom">
+                            <div>
+                                <span class="fw-bold text-dark"><%=p.getName()%></span>
+                                <small class="text-muted ms-2"><%=p.getId()%></small>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-success fw-bold px-3"
+                                    onclick="handleJoin('<%=p.getId()%>', '<%=currentStoreId%>', 'approve')">
+                                    승인
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger fw-bold px-3"
+                                    onclick="handleJoin('<%=p.getId()%>', '<%=currentStoreId%>', 'reject')">
+                                    거절
+                                </button>
+                            </div>
+                        </div>
+                        <%  }
+                        }%>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%-- 매장 설정 모달 --%>
+<div class="modal fade" id="storeSettingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="fa-solid fa-gear me-2 text-warning"></i>매장 급여 설정
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-4">해당 매장에 적용할 수당 정책을 설정하세요.</p>
+
+                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded-3 mb-3">
+                    <div>
+                        <div class="fw-bold text-dark">야간 수당</div>
+                        <small class="text-muted">22:00 ~ 06:00 근무 시 기본 시급 × 1.5 적용</small>
+                    </div>
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" id="useNightPay" style="width:48px; height:24px;">
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded-3 mb-3">
+                    <div>
+                        <div class="fw-bold text-dark">주말 수당</div>
+                        <small class="text-muted">토·일 근무 시 기본 시급 × 1.5 적용</small>
+                    </div>
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" id="useWeekendPay" style="width:48px; height:24px;">
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded-3 mb-3">
+                    <div>
+                        <div class="fw-bold text-dark">주휴수당</div>
+                        <small class="text-muted">주 15시간 이상 근무 시 적용 (5인 이상 사업장 의무)</small>
+                    </div>
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" id="useHolidayPay" style="width:48px; height:24px;">
+                    </div>
+                </div>
+
+                <div class="alert alert-info small py-2 mb-0">
+                    <i class="fa-solid fa-circle-info me-1"></i>
+                    5인 미만 사업장은 주휴수당 의무 적용 대상이 아닙니다.
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light fw-bold px-4" data-bs-dismiss="modal">취소</button>
+                <button type="button" class="btn btn-primary fw-bold px-4" onclick="saveStoreSetting()">
+                    <i class="fa-solid fa-check me-1"></i>저장
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%-- 새 매장 생성 신청 모달 --%>
+<div class="modal fade" id="addStoreModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="fa-solid fa-plus me-2 text-primary"></i>새 매장 생성 신청
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-secondary">매장 코드</label>
+                    <input type="text" id="newStoreId" class="form-control" placeholder="예: store01">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-secondary">매장 이름</label>
+                    <input type="text" id="newStoreName" class="form-control" placeholder="예: 강남점">
+                </div>
+                <div class="alert alert-warning small py-2 mb-0">
+                    <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                    전체관리자 승인 후 매장이 활성화됩니다.
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light fw-bold px-4" data-bs-dismiss="modal">취소</button>
+                <button type="button" class="btn btn-primary fw-bold px-4" onclick="requestCreateStore()">
+                    <i class="fa-solid fa-paper-plane me-1"></i>신청하기
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%@ include file="footer.jsp" %>
+
+<script>
+// 매장 선택
+function selectStore(storeId, storeName) {
+    document.querySelectorAll('.store-item').forEach(el => el.classList.remove('active'));
+    const item = document.getElementById('store-item-' + storeId);
+    if (item) item.classList.add('active');
+    document.getElementById('selectedStoreName').innerHTML =
+        '<i class="fa-solid fa-store me-2 text-primary"></i>' + storeName;
+    // TODO: 해당 매장 직원 목록 AJAX 로드
+    location.href = 'StoreMemberManage?storeId=' + storeId;
+}
+
+// 역할 로드
+async function loadRoleOptions() {
+    try {
+        const storeId = '<%=currentStoreId%>';
+        if (!storeId) return;
+        const res  = await fetch('GetRoles?storeId=' + encodeURIComponent(storeId));
+        const data = await res.json();
+        if (data.status === 'success') {
+            const roleFilterEl = document.getElementById('roleFilter');
+            document.querySelectorAll('.role-select').forEach(select => {
+                const cur = select.dataset.current || '0';
+                data.list.forEach(role => {
+                    const opt = document.createElement('option');
+                    opt.value = role.roleId;
+                    opt.text  = role.roleName;
+                    opt.dataset.wage = role.wage;
+                    if (String(role.roleId) === String(cur)) opt.selected = true;
+                    select.appendChild(opt);
+                });
+            });
+            data.list.forEach(role => {
+                const opt = document.createElement('option');
+                opt.value = role.roleName;
+                opt.text  = role.roleName;
+                roleFilterEl.appendChild(opt);
+            });
+        }
+    } catch (e) { console.error(e); }
+}
+
+// 역할 지정
+async function assignRole(memId, select) {
+    const roleId   = select.value;
+    const roleName = select.options[select.selectedIndex].text;
+    if (!confirm('"' + roleName + '" 역할을 지정하시겠습니까?')) {
+        select.value = select.dataset.current || '0';
+        return;
+    }
+    const params = new URLSearchParams();
+    params.append('memId', memId);
+    params.append('roleId', roleId);
+    try {
+        const res  = await fetch('RoleAssign', { method: 'POST', body: params });
+        const data = await res.json();
+        if (data.status === 'success') {
+            select.dataset.current = roleId;
+            const wageEl = document.getElementById('wage-' + memId);
+            if (wageEl) {
+                wageEl.innerText = data.wage > 0 ? Number(data.wage).toLocaleString() + '원' : '-';
+                const badge = document.createElement('span');
+                badge.className = 'badge bg-success ms-1';
+                badge.innerText = '저장됨';
+                wageEl.after(badge);
+                setTimeout(() => badge.remove(), 2000);
+            }
+        } else {
+            showToast(data.message, 'danger');
+            select.value = select.dataset.current || '0';
+        }
+    } catch (e) {
+        showToast('통신 오류가 발생했습니다.', 'danger');
+    }
+}
+
+// 직원 제외
+function removeStaff(id, name) {
+    if (confirm("'" + name + "' 직원을 매장에서 제외하시겠습니까?")) {
+        location.href = 'AdminMemberDelete?id=' + id;
+    }
+}
+
+// 필터
+function filterMembers() {
+    const nameFilter = document.getElementById('searchInput').value.toUpperCase();
+    const roleFilter = document.getElementById('roleFilter').value;
+    const typeFilter = document.getElementById('typeFilter').value;
+    document.querySelectorAll('#memberTable tbody tr').forEach(tr => {
+        if (tr.cells.length < 2) return;
+        const name    = tr.cells[0].innerText;
+        const phone   = tr.cells[1].innerText;
+        const roleSelect = tr.querySelector('.role-select');
+        const isAdmin = name.includes('점장');
+        const nameMatch = name.toUpperCase().includes(nameFilter) || phone.toUpperCase().includes(nameFilter);
+        let roleMatch = true;
+        if (roleFilter === 'unassigned') roleMatch = roleSelect && roleSelect.value === '0';
+        else if (roleFilter !== '') roleMatch = roleSelect && roleSelect.options[roleSelect.selectedIndex].text === roleFilter;
+        let typeMatch = true;
+        if (typeFilter === 'staff') typeMatch = !isAdmin;
+        if (typeFilter === 'admin') typeMatch = isAdmin;
+        tr.style.display = (nameMatch && roleMatch && typeMatch) ? '' : 'none';
+    });
+}
+
+// 소속 신청 승인/거절
+async function handleJoin(memId, storeId, action) {
+    const label = action === 'approve' ? '승인' : '거절';
+    if (!confirm(memId + ' 직원을 ' + label + '하시겠습니까?')) return;
+
+    const params = new URLSearchParams();
+    params.append('action',  action);
+    params.append('memId',   memId);
+    params.append('storeId', storeId);
+
+    try {
+        const res  = await fetch('StoreMemberManage', { method: 'POST', body: params });
+        const data = await res.json();
+        showToast(data.message, data.status === 'success' ? 'success' : 'danger');
+        if (data.status === 'success') location.reload();
+    } catch (e) {
+        showToast('통신 오류가 발생했습니다.', 'danger');
+    }
+}
+
+// 새 매장 신청 (기능 연결)
+async function requestCreateStore() {
+    const storeId   = document.getElementById('newStoreId').value.trim();
+    const storeName = document.getElementById('newStoreName').value.trim();
+    if (!storeId || !storeName) {
+        showToast('매장 코드와 이름을 입력해주세요.', 'warning');
+        return;
+    }
+
+    const params = new URLSearchParams();
+    params.append('action',    'createStore');
+    params.append('storeId',   storeId);
+    params.append('storeName', storeName);
+
+    try {
+        const res  = await fetch('StoreMemberManage', { method: 'POST', body: params });
+        const data = await res.json();
+        showToast(data.message, data.status === 'success' ? 'success' : 'danger');
+        if (data.status === 'success') {
+            bootstrap.Modal.getInstance(document.getElementById('addStoreModal')).hide();
+            location.reload();
+        }
+    } catch (e) {
+        showToast('통신 오류가 발생했습니다.', 'danger');
+    }
+}
+
+// 매장 설정 저장 (UI only - 주휴수당 기능은 추후 연결)
+function saveStoreSetting() {
+    showToast('설정이 저장되었습니다. (주휴수당 기능은 추후 업데이트 예정)', 'info');
+    bootstrap.Modal.getInstance(document.getElementById('storeSettingModal')).hide();
+}
+
+document.addEventListener('DOMContentLoaded', loadRoleOptions);
+</script>
+</body>
+</html>
