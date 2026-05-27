@@ -114,6 +114,29 @@ public class StoreMemberManage extends HttpServlet {
                 e.printStackTrace();
                 out.print("{\"status\":\"error\", \"message\":\"서버 오류가 발생했습니다.\"}");
             }
+        // 근무 시간/유형 저장
+        } else if ("saveWorkSetting".equals(action)) {
+            String memId     = request.getParameter("memId");
+            String storeId   = request.getParameter("storeId");
+            String workStart = request.getParameter("workStart");
+            String workEnd   = request.getParameter("workEnd");
+            String workType  = request.getParameter("workType");
+            try (Connection conn = DBConn.getConnection()) {
+                String sql = "UPDATE tb_my_stores SET work_start = ?, work_end = ?, work_type = ? " +
+                             "WHERE mem_id = ? AND store_id = ?";
+                try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                    pstmt.setString(1, workStart);
+                    pstmt.setString(2, workEnd);
+                    pstmt.setString(3, workType);
+                    pstmt.setString(4, memId);
+                    pstmt.setString(5, storeId);
+                    pstmt.executeUpdate();
+                }
+                out.print("{\"status\":\"success\", \"message\":\"근무 설정이 저장되었습니다.\"}");
+            } catch (Exception e) {
+                e.printStackTrace();
+                out.print("{\"status\":\"error\", \"message\":\"서버 오류가 발생했습니다.\"}");
+            }
         } else {
             out.print("{\"status\":\"fail\", \"message\":\"알 수 없는 요청입니다.\"}");
         }

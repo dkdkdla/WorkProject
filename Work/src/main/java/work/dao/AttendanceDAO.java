@@ -225,7 +225,7 @@ public class AttendanceDAO {
         ResultSet rs = null;
         
         
-        String sql = "SELECT a.idx, m.mem_name, a.att_type, a.att_time " +
+        String sql = "SELECT a.idx, m.mem_name, a.att_type, a.att_time, ISNULL(a.role_id, 0) as role_id " +
                      "FROM tb_attendance a " +
                      "JOIN tb_member m ON a.mem_id = m.mem_id " +
                      "WHERE a.store_id = ? " +
@@ -258,7 +258,8 @@ public class AttendanceDAO {
                 dto.setIdx(rs.getInt("idx"));
                 dto.setStoreName(rs.getString("mem_name")); 
                 dto.setAttType(rs.getString("att_type"));
-                dto.setAttTime(rs.getString("att_time").substring(0, 16)); 
+                dto.setAttTime(rs.getString("att_time").substring(0, 16));
+                dto.setRoleId(rs.getInt("role_id"));
                 list.add(dto);
             }
         } catch (Exception e) {

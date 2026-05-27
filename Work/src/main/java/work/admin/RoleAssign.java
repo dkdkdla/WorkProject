@@ -23,16 +23,17 @@ public class RoleAssign extends HttpServlet {
 
         HttpSession session = request.getSession();
         String userRole = (String) session.getAttribute("userRole");
+        String storeId  = (String) session.getAttribute("userStoreId");
 
         if (!"A".equals(userRole != null ? userRole.trim() : "")) {
             out.print("{\"status\":\"fail\", \"message\":\"권한이 없습니다.\"}");
             return;
         }
 
-        String memId    = request.getParameter("memId");
+        String memId     = request.getParameter("memId");
         String roleIdStr = request.getParameter("roleId");
 
-        if (memId == null || roleIdStr == null) {
+        if (memId == null || roleIdStr == null || storeId == null) {
             out.print("{\"status\":\"fail\", \"message\":\"필수 정보가 누락되었습니다.\"}");
             return;
         }
@@ -40,7 +41,7 @@ public class RoleAssign extends HttpServlet {
         try {
             int roleId = Integer.parseInt(roleIdStr);
 
-            // 역할에 해당하는 시급 조회
+            // 역할의 기본 시급 조회
             int wage = 0;
             if (roleId > 0) {
                 String wageSql = "SELECT hourly_wage FROM tb_role WHERE role_id = ?";
@@ -53,17 +54,33 @@ public class RoleAssign extends HttpServlet {
                 }
             }
 
-            // tb_member 업데이트 (role_id + hourly_wage)
+            // tb_my_stores에 role_id 업데이트 (매장별 역할 지정)
             String sql;
             if (roleId > 0) {
-                sql = "UPDATE tb_member SET role_id = ?, hourly_wage = ? WHERE mem_id = ?";
+                sql = "UPDATE tb_my_stores SET role_id = ? WHERE mem_id = ? AND store_id = ?";
             } else {
-                // roleId = 0이면 역할 해제
-                sql = "UPDATE tb_member SET role_id = NULL, hourly_wage = 0 WHERE mem_id = ?";
+                sql = "UPDATE tb_my_stores SET role_id = NULL WHERE mem_id = ? AND store_id = ?";
             }
 
             try (Connection conn = DBConn.getConnection();
                  PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                if (roleId > 0) {
+                    pstmt.setInt(1, roleId);
+                    pstmt.setString(2, memId);
+                    pstmt.setString(3, storeId);
+                } else {
+                    pstmt.setString(1, memId);
+                    pstmt.setString(2, storeId);
+                }
+                pstmt.executeUpdate();
+            }
+
+            // tb_member에도 동기화 (시급 표시용)
+            String memberSql = roleId > 0
+                ? "UPDATE tb_member SET role_id = ?, hourly_wage = ? WHERE mem_id = ?"
+                : "UPDATE tb_member SET role_id = NULL, hourly_wage = 0 WHERE mem_id = ?";
+            try (Connection conn = DBConn.getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(memberSql)) {
                 if (roleId > 0) {
                     pstmt.setInt(1, roleId);
                     pstmt.setInt(2, wage);

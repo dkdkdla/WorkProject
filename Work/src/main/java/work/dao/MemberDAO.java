@@ -72,7 +72,8 @@ public class MemberDAO {
                 dto.setPhone(rs.getString("mem_phone"));
                 dto.setRole(rs.getString("mem_role") != null ? rs.getString("mem_role").trim() : null);
                 dto.setHourlyWage(rs.getInt("hourly_wage"));
-                dto.setStoreId(rs.getString("store_id")); 
+                dto.setStoreId(rs.getString("store_id"));
+                dto.setWorkDays(rs.getString("work_days") != null ? rs.getString("work_days") : "");
                 
                 return dto;
             }
@@ -353,7 +354,8 @@ public class MemberDAO {
         ArrayList<MemberDTO> list = new ArrayList<>();
         
         // 1. tb_my_stores를 사용하고 모든 컬럼을 가져옵니다.
-        String sql = "SELECT m.mem_id, m.mem_name, m.mem_phone, m.hourly_wage, m.mem_role, m.work_days, ISNULL(m.role_id, 0) as role_id " +
+        String sql = "SELECT m.mem_id, m.mem_name, m.mem_phone, m.hourly_wage, m.mem_role, m.work_days, ISNULL(m.role_id, 0) as role_id, " +
+                     "ISNULL(ms.work_start, '') as work_start, ISNULL(ms.work_end, '') as work_end, ISNULL(ms.work_type, '') as work_type " +
                      "FROM tb_member m " +
                      "JOIN tb_my_stores ms ON m.mem_id = ms.mem_id " +
                      "WHERE ms.store_id = ? AND ms.join_status = 'ACTIVE' " +
@@ -373,6 +375,9 @@ public class MemberDAO {
                     dto.setRole(rs.getString("mem_role") != null ? rs.getString("mem_role").trim() : null);
                     dto.setWorkDays(rs.getString("work_days") != null ? rs.getString("work_days") : "");
                     dto.setRoleId(rs.getInt("role_id"));
+                    dto.setWorkStart(rs.getString("work_start"));
+                    dto.setWorkEnd(rs.getString("work_end"));
+                    dto.setWorkType(rs.getString("work_type"));
                     list.add(dto);
                 }
             }

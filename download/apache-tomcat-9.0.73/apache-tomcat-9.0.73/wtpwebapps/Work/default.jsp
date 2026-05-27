@@ -229,7 +229,7 @@
                             </a>
                         </div>
                         <div class="col-6 col-md-3">
-                            <a href="StoreMemberManage" class="card custom-card p-4 d-flex flex-column align-items-center justify-content-center h-100 shadow-sm text-decoration-none text-center">
+                            <a href="StoreManage" class="card custom-card p-4 d-flex flex-column align-items-center justify-content-center h-100 shadow-sm text-decoration-none text-center">
                                 <div class="icon-box bg-warning text-white shadow mb-2"><i class="fa-solid fa-store fa-lg"></i></div>
                                 <h6 class="mb-1 fw-bold text-dark">매장 관리</h6>
                                 <small class="text-muted">소속 매장 신청</small>

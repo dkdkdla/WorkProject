@@ -89,4 +89,15 @@ public class MemberDTO {
 	public void setRoleId(int roleId) {
 		this.roleId = roleId;
 	}
+
+	private String workStart;
+	private String workEnd;
+	private String workType;
+
+	public String getWorkStart() { return workStart; }
+	public void setWorkStart(String workStart) { this.workStart = workStart; }
+	public String getWorkEnd() { return workEnd; }
+	public void setWorkEnd(String workEnd) { this.workEnd = workEnd; }
+	public String getWorkType() { return workType; }
+	public void setWorkType(String workType) { this.workType = workType; }
 }

@@ -9,6 +9,9 @@
     }
     ArrayList<String[]> roleList = (ArrayList<String[]>) request.getAttribute("roleList");
     if (roleList == null) roleList = new ArrayList<>();
+    // roleList 구조: [0]=role_id, [1]=role_name, [2]=hourly_wage,
+    //                [3]=wage_weekday_day, [4]=wage_weekday_night,
+    //                [5]=wage_weekend_day, [6]=wage_weekend_night
 %>
 <!DOCTYPE html>
 <html lang="ko">
@@ -21,12 +24,15 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="<%=request.getContextPath()%>/css/style.css">
     <link rel="icon" type="image/png" href="<%=request.getContextPath()%>/jlogo.png">
+    <style>
+        .wage-readonly { background-color: #f8f9fc !important; color: #6c757d; }
+    </style>
 </head>
 <body>
 
 <%@ include file="navbar.jsp" %>
 
-<div class="container mt-5 mb-5" style="max-width:700px;">
+<div class="container mt-5 mb-5" style="max-width:860px;">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="fw-bold text-dark mb-0">
             <i class="fa-solid fa-tags me-2 text-primary"></i>역할 관리
@@ -36,11 +42,12 @@
         </a>
     </div>
 
-    <%-- 역할 추가 --%>
+    <%-- 역할 추가 카드 --%>
     <div class="card border-0 shadow-sm p-4 mb-4" style="border-top: 4px solid #4e73df !important;">
-        <h5 class="fw-bold mb-3"><i class="fa-solid fa-plus-circle me-2 text-primary"></i>새 역할 추가</h5>
-        <div class="row g-3">
-            <div class="col-md-4">
+        <h5 class="fw-bold mb-1"><i class="fa-solid fa-plus-circle me-2 text-primary"></i>새 역할 추가</h5>
+        <p class="text-muted small mb-3">기본 시급을 입력하면 야간·주말 시급이 자동 계산됩니다.</p>
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
                 <label class="form-label small fw-bold text-secondary">역할 이름</label>
                 <input type="text" id="newRoleName" class="form-control" placeholder="예: 홀 직원">
             </div>
@@ -51,32 +58,42 @@
                         oninput="calcAutoWage()">
                     <span class="input-group-text small">원</span>
                 </div>
-                <small class="text-muted" style="font-size:11px;">예: 10030 (최저임금)</small>
             </div>
             <div class="col-md-2">
                 <label class="form-label small fw-bold text-secondary">
-                    야간 시급 <span class="badge bg-dark ms-1" style="font-size:10px;">×1.5</span>
+                    평일야간 <span class="badge bg-dark ms-1" style="font-size:10px;">×1.5</span>
                 </label>
                 <div class="input-group">
-                    <input type="number" id="newNightWage" class="form-control bg-light" placeholder="자동계산" min="0" readonly>
+                    <input type="number" id="newNightWage" class="form-control wage-readonly" placeholder="자동" readonly>
                     <span class="input-group-text small">원</span>
                 </div>
-                <small class="text-muted" style="font-size:11px;">22:00~06:00</small>
             </div>
             <div class="col-md-2">
                 <label class="form-label small fw-bold text-secondary">
-                    주말 시급 <span class="badge bg-warning text-dark ms-1" style="font-size:10px;">×1.5</span>
+                    주말주간 <span class="badge bg-warning text-dark ms-1" style="font-size:10px;">×1.5</span>
                 </label>
                 <div class="input-group">
-                    <input type="number" id="newWeekendWage" class="form-control bg-light" placeholder="자동계산" min="0" readonly>
+                    <input type="number" id="newWeekendWage" class="form-control wage-readonly" placeholder="자동" readonly>
                     <span class="input-group-text small">원</span>
                 </div>
-                <small class="text-muted" style="font-size:11px;">토·일요일</small>
             </div>
-            <div class="col-md-2 d-flex align-items-end">
+            <div class="col-md-2">
+                <label class="form-label small fw-bold text-secondary">
+                    주말야간 <span class="badge bg-danger ms-1" style="font-size:10px;">×2.0</span>
+                </label>
+                <div class="input-group">
+                    <input type="number" id="newWeekendNightWage" class="form-control wage-readonly" placeholder="자동" readonly>
+                    <span class="input-group-text small">원</span>
+                </div>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
                 <button type="button" onclick="addRole()" class="btn btn-primary fw-bold w-100">추가</button>
             </div>
         </div>
+        <small class="text-muted mt-2 d-block">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            평일주간×1.0 / 평일야간·주말주간×1.5 / 주말야간×2.0 자동 적용
+        </small>
     </div>
 
     <%-- 역할 목록 --%>
@@ -95,16 +112,18 @@
                     <tr>
                         <th>역할 이름</th>
                         <th>기본 시급</th>
-                        <th>야간 시급 <span class="badge bg-dark ms-1" style="font-size:10px;">×1.5</span></th>
-                        <th>주말 시급 <span class="badge bg-warning text-dark ms-1" style="font-size:10px;">×1.5</span></th>
+                        <th>평일야간 <span class="badge bg-dark" style="font-size:10px;">×1.5</span></th>
+                        <th>주말주간 <span class="badge bg-warning text-dark" style="font-size:10px;">×1.5</span></th>
+                        <th>주말야간 <span class="badge bg-danger" style="font-size:10px;">×2.0</span></th>
                         <th class="text-center">관리</th>
                     </tr>
                 </thead>
                 <tbody id="roleTableBody">
                     <% for (String[] r : roleList) {
-                        int wage = Integer.parseInt(r[2]);
-                        int nightWage   = (int)(wage * 1.5);
-                        int weekendWage = (int)(wage * 1.5);
+                        int base      = Integer.parseInt(r[2]);
+                        int wwn       = r.length > 4 ? Integer.parseInt(r[4]) : (int)(base * 1.5);
+                        int wend      = r.length > 5 ? Integer.parseInt(r[5]) : (int)(base * 1.5);
+                        int wendn     = r.length > 6 ? Integer.parseInt(r[6]) : (int)(base * 2.0);
                     %>
                     <tr id="role-row-<%=r[0]%>">
                         <td>
@@ -112,27 +131,34 @@
                                 id="roleName-<%=r[0]%>" value="<%=r[1]%>">
                         </td>
                         <td>
-                            <div class="input-group input-group-sm" style="max-width:140px;">
+                            <div class="input-group input-group-sm" style="max-width:130px;">
                                 <input type="number" class="form-control border-0 bg-transparent fw-bold text-primary"
                                     id="roleWage-<%=r[0]%>" value="<%=r[2]%>"
                                     oninput="updateAutoWage('<%=r[0]%>', this.value)">
                                 <span class="input-group-text bg-transparent border-0 text-muted small">원/시</span>
                             </div>
                             <small class="text-muted" style="font-size:11px;">
-                                월 160h: <%=String.format("%,d", wage * 160)%>원
+                                월 160h: <%=String.format("%,d", base * 160)%>원
                             </small>
                         </td>
                         <td>
-                            <div class="input-group input-group-sm" style="max-width:140px;">
-                                <input type="number" class="form-control border-0 bg-light"
-                                    id="roleNightWage-<%=r[0]%>" value="<%=nightWage%>" readonly>
+                            <div class="input-group input-group-sm" style="max-width:130px;">
+                                <input type="number" class="form-control wage-readonly"
+                                    id="roleNightWage-<%=r[0]%>" value="<%=wwn%>" readonly>
                                 <span class="input-group-text bg-transparent border-0 text-muted small">원/시</span>
                             </div>
                         </td>
                         <td>
-                            <div class="input-group input-group-sm" style="max-width:140px;">
-                                <input type="number" class="form-control border-0 bg-light"
-                                    id="roleWeekendWage-<%=r[0]%>" value="<%=weekendWage%>" readonly>
+                            <div class="input-group input-group-sm" style="max-width:130px;">
+                                <input type="number" class="form-control wage-readonly"
+                                    id="roleWeekendWage-<%=r[0]%>" value="<%=wend%>" readonly>
+                                <span class="input-group-text bg-transparent border-0 text-muted small">원/시</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="input-group input-group-sm" style="max-width:130px;">
+                                <input type="number" class="form-control wage-readonly"
+                                    id="roleWeekendNightWage-<%=r[0]%>" value="<%=wendn%>" readonly>
                                 <span class="input-group-text bg-transparent border-0 text-muted small">원/시</span>
                             </div>
                         </td>
@@ -158,68 +184,66 @@
 <%@ include file="footer.jsp" %>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-// 기본 시급 입력 시 야간/주말 자동 계산 (추가 폼)
 function calcAutoWage() {
-    const base = parseInt(document.getElementById('newWage').value) || 0;
-    document.getElementById('newNightWage').value   = Math.floor(base * 1.5);
-    document.getElementById('newWeekendWage').value = Math.floor(base * 1.5);
+    var base = parseInt(document.getElementById('newWage').value) || 0;
+    document.getElementById('newNightWage').value        = Math.floor(base * 1.5);
+    document.getElementById('newWeekendWage').value      = Math.floor(base * 1.5);
+    document.getElementById('newWeekendNightWage').value = Math.floor(base * 2.0);
 }
 
-// 기존 역할 시급 변경 시 야간/주말 자동 계산
 function updateAutoWage(roleId, val) {
-    const base = parseInt(val) || 0;
-    const nightEl   = document.getElementById('roleNightWage-'   + roleId);
-    const weekendEl = document.getElementById('roleWeekendWage-' + roleId);
-    if (nightEl)   nightEl.value   = Math.floor(base * 1.5);
-    if (weekendEl) weekendEl.value = Math.floor(base * 1.5);
+    var base = parseInt(val) || 0;
+    var n  = document.getElementById('roleNightWage-'        + roleId);
+    var w  = document.getElementById('roleWeekendWage-'      + roleId);
+    var wn = document.getElementById('roleWeekendNightWage-' + roleId);
+    if (n)  n.value  = Math.floor(base * 1.5);
+    if (w)  w.value  = Math.floor(base * 1.5);
+    if (wn) wn.value = Math.floor(base * 2.0);
 }
 
-// 역할 추가
 async function addRole() {
-    const roleName = document.getElementById('newRoleName').value.trim();
-    const wage     = document.getElementById('newWage').value.trim();
+    var roleName = document.getElementById('newRoleName').value.trim();
+    var wage     = document.getElementById('newWage').value.trim();
     if (!roleName) { alert('역할 이름을 입력해주세요.'); return; }
 
-    const params = new URLSearchParams();
+    var params = new URLSearchParams();
     params.append('mode', 'add');
     params.append('roleName', roleName);
     params.append('wage', wage || '0');
 
-    const res  = await fetch('RoleManage', { method: 'POST', body: params });
-    const data = await res.json();
+    var res  = await fetch('RoleManage', { method: 'POST', body: params });
+    var data = await res.json();
     alert(data.message);
     if (data.status === 'success') location.reload();
 }
 
-// 역할 수정
 async function editRole(roleId) {
-    const roleName = document.getElementById('roleName-' + roleId).value.trim();
-    const wage     = document.getElementById('roleWage-' + roleId).value.trim();
+    var roleName = document.getElementById('roleName-' + roleId).value.trim();
+    var wage     = document.getElementById('roleWage-'  + roleId).value.trim();
 
-    const params = new URLSearchParams();
+    var params = new URLSearchParams();
     params.append('mode', 'edit');
     params.append('roleId', roleId);
     params.append('roleName', roleName);
     params.append('wage', wage || '0');
 
-    const res  = await fetch('RoleManage', { method: 'POST', body: params });
-    const data = await res.json();
+    var res  = await fetch('RoleManage', { method: 'POST', body: params });
+    var data = await res.json();
     alert(data.message);
 }
 
-// 역할 삭제
 async function deleteRole(roleId, roleName) {
     if (!confirm('[' + roleName + '] 역할을 삭제하시겠습니까?')) return;
 
-    const params = new URLSearchParams();
+    var params = new URLSearchParams();
     params.append('mode', 'delete');
     params.append('roleId', roleId);
 
-    const res  = await fetch('RoleManage', { method: 'POST', body: params });
-    const data = await res.json();
+    var res  = await fetch('RoleManage', { method: 'POST', body: params });
+    var data = await res.json();
     alert(data.message);
     if (data.status === 'success') {
-        const row = document.getElementById('role-row-' + roleId);
+        var row = document.getElementById('role-row-' + roleId);
         if (row) row.remove();
     }
 }

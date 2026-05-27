@@ -149,6 +149,26 @@
         icon.classList.toggle("fa-eye-slash");
     }
 
+    // 폼 제출 (AJAX)
+    document.getElementById('profileForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var formData = new URLSearchParams(new FormData(this));
+        fetch('MyPageUpdate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            if (data.status === 'success') {
+                showToast('정보가 수정되었습니다.', 'success');
+            } else {
+                showToast(data.message || '수정 실패', 'danger');
+            }
+        })
+        .catch(function() { showToast('서버 통신 오류', 'danger'); });
+    });
+
     // 🚨 라이선스 코드 토글 (관리자 전용)
     function toggleAdminCodeVisibility() {
         const codeInput = document.getElementById("adminCode");

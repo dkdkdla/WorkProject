@@ -16,7 +16,14 @@ public class AttendanceDTO {
     private String storeName;
     private int idx;
     private String memberId;
+    private int    roleId;
     
+	public int getRoleId() {
+		return roleId;
+	}
+	public void setRoleId(int roleId) {
+		this.roleId = roleId;
+	}
 	public String getAttType() {
 		return attType;
 	}

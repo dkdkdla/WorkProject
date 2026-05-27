@@ -43,7 +43,6 @@
         #adminNotice { display: none; }
         .hint-text { font-size: 11px; margin-top: 4px; display: block; }
         
-        /* 🚨 [추가] 로고 박스 애니메이션 및 스타일 */
         .logo-wrapper {
             display: inline-block;
             overflow: hidden;
@@ -131,7 +130,6 @@
                     <small class="text-muted hint-text">실제 생년월일을 입력해주세요.</small>
                 </div>
 
-
                 <div class="mb-4" id="storeWrap">
                     <label class="form-label" id="storeLabel">소속 매장 <span class="text-muted">(선택, 여러 개 가능)</span></label>
 
@@ -149,13 +147,11 @@
                     <input type="hidden" name="storeIds" id="storeIdsHidden">
                     <small id="storeHint" class="text-muted hint-text">없으면 나중에 매장 관리에서 신청 가능합니다.</small>
                 </div>
+
                 <%-- 매장별 근무 요일은 JS로 동적 생성 --%>
                 <div id="storeWorkDaysContainer" class="mb-4"></div>
                 <input type="hidden" name="workDays" id="workDaysHidden">
                 <input type="hidden" name="storeWorkDays" id="storeWorkDaysHidden">
-
-
-
 
                 <button type="submit" class="btn btn-primary w-100 py-3 fw-bold shadow-sm mb-3">가입하기</button>
             </form>
@@ -203,20 +199,20 @@
 <script>
     // 생년월일 기본값: 오늘 날짜
     window.addEventListener('DOMContentLoaded', function() {
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
+        var today = new Date();
+        var yyyy = today.getFullYear();
+        var mm = String(today.getMonth() + 1).padStart(2, '0');
+        var dd = String(today.getDate()).padStart(2, '0');
         document.getElementById('birth').value = yyyy + '-' + mm + '-' + dd;
     });
+
     function handleRoleChange(role) {
-        const adminNotice = document.getElementById("adminNotice");
-        const storeLabel  = document.getElementById("storeLabel");
-        const storeWrap   = document.getElementById("storeWrap");
-        const storeHint   = document.getElementById("storeHint");
+        var adminNotice = document.getElementById("adminNotice");
+        var storeLabel  = document.getElementById("storeLabel");
+        var storeWrap   = document.getElementById("storeWrap");
+        var storeHint   = document.getElementById("storeHint");
 
         if (role === 'A') {
-            // 점장: 승인 안내 표시, 매장ID/시급 숨김
             adminNotice.style.display = "block";
             storeWrap.style.display   = "none";
             selectedStores = [];
@@ -226,7 +222,6 @@
             document.getElementById('storeWorkDaysHidden').value = "";
             document.getElementById('workDaysHidden').value = "";
         } else {
-            // 직원: 매장 검색 표시
             adminNotice.style.display = "none";
             storeWrap.style.display   = "block";
             storeLabel.innerHTML      = '소속 매장 <span class="text-muted">(선택)</span>';
@@ -235,9 +230,8 @@
         }
     }
 
-    // 전화번호 자동 하이픈
     function autoHyphen(input) {
-        let val = input.value.replace(/[^0-9]/g, '');
+        var val = input.value.replace(/[^0-9]/g, '');
         if (val.length <= 3) {
             input.value = val;
         } else if (val.length <= 7) {
@@ -247,29 +241,11 @@
         }
     }
 
-    // 요일 체크박스 → hidden input 연동
-    document.querySelectorAll('.day-check').forEach(function(chk) {
-        chk.addEventListener('change', function() {
-            const checked = Array.from(document.querySelectorAll('.day-check:checked'))
-                                 .map(c => c.value);
-            document.getElementById('workDaysHidden').value = checked.join(',');
-
-            // 선택된 버튼 스타일 변경
-            document.querySelectorAll('.day-check').forEach(function(c) {
-                const label = document.querySelector('label[for="' + c.id + '"]');
-                if (c.checked) {
-                    label.classList.replace('btn-outline-primary', 'btn-primary');
-                } else {
-                    label.classList.replace('btn-primary', 'btn-outline-primary');
-                }
-            });
-        });
-    });
-    let idChecked = false;
+    var idChecked = false;
 
     async function checkDuplicateId() {
-        const id = document.getElementById('inputId').value.trim();
-        const msgEl = document.getElementById('idCheckMsg');
+        var id = document.getElementById('inputId').value.trim();
+        var msgEl = document.getElementById('idCheckMsg');
 
         if (!id) {
             msgEl.className = 'hint-text text-danger';
@@ -278,8 +254,8 @@
         }
 
         try {
-            const res  = await fetch('CheckId?id=' + encodeURIComponent(id));
-            const data = await res.json();
+            var res  = await fetch('CheckId?id=' + encodeURIComponent(id));
+            var data = await res.json();
 
             if (data.status === 'available') {
                 msgEl.className = 'hint-text text-success fw-bold';
@@ -296,43 +272,44 @@
         }
     }
 
-    // 아이디 변경 시 중복확인 초기화
     function resetIdCheck() {
         idChecked = false;
-        const msgEl = document.getElementById('idCheckMsg');
+        var msgEl = document.getElementById('idCheckMsg');
         msgEl.innerText = '';
         msgEl.className = 'hint-text';
     }
-    let regSearchTimer = null;
+
+    var regSearchTimer = null;
+
     async function searchStoreModal(keyword) {
         clearTimeout(regSearchTimer);
-        const resultBox = document.getElementById('modalStoreResult');
+        var resultBox = document.getElementById('modalStoreResult');
 
         if (!keyword || keyword.trim().length < 1) {
             resultBox.innerHTML = '<div class="text-center text-muted py-4 small"><i class="fa-solid fa-magnifying-glass fa-2x mb-2 d-block"></i>매장 이름이나 코드를 입력해서 검색하세요.</div>';
             return;
         }
 
-        regSearchTimer = setTimeout(async () => {
+        regSearchTimer = setTimeout(async function() {
             try {
-                const res  = await fetch('SearchStore?keyword=' + encodeURIComponent(keyword.trim()));
-                const data = await res.json();
+                var res  = await fetch('SearchStore?keyword=' + encodeURIComponent(keyword.trim()));
+                var data = await res.json();
                 resultBox.innerHTML = '';
 
                 if (data.status === 'success' && data.list.length > 0) {
-                    const table = document.createElement('table');
+                    var table = document.createElement('table');
                     table.className = 'table table-hover align-middle mb-0';
                     table.innerHTML = '<thead class="table-light"><tr><th>매장 이름</th><th>매장 코드</th><th></th></tr></thead>';
-                    const tbody = document.createElement('tbody');
+                    var tbody = document.createElement('tbody');
 
-                    data.list.forEach(store => {
-                        const tr = document.createElement('tr');
+                    data.list.forEach(function(store) {
+                        var tr = document.createElement('tr');
                         tr.style.cursor = 'pointer';
                         tr.innerHTML =
                             '<td class="fw-bold">' + store.name + '</td>' +
                             '<td class="text-muted">' + store.id + '</td>' +
                             '<td class="text-end"><button type="button" class="btn btn-sm btn-primary fw-bold">선택</button></td>';
-                        tr.onclick = () => selectStoreReg(store.id, store.name);
+                        tr.onclick = function() { selectStoreReg(store.id, store.name); };
                         tbody.appendChild(tr);
                     });
 
@@ -347,12 +324,10 @@
         }, 300);
     }
 
-    // 선택된 매장 목록 (id, name 배열)
-    let selectedStores = [];
+    var selectedStores = [];
 
-    // 매장 선택 (다중)
     function selectStoreReg(id, name) {
-        if (selectedStores.find(s => s.id === id)) {
+        if (selectedStores.find(function(s) { return s.id === id; })) {
             showToast('이미 선택된 매장입니다.', 'warning');
             return;
         }
@@ -360,26 +335,25 @@
         selectedStores.push({id: id, name: name});
         renderStoreTags();
 
-        const modal = bootstrap.Modal.getInstance(document.getElementById('storeSearchModal'));
+        var modal = bootstrap.Modal.getInstance(document.getElementById('storeSearchModal'));
         if (modal) modal.hide();
         document.getElementById('modalStoreKeyword').value = '';
         document.getElementById('modalStoreResult').innerHTML = '<div class="text-center text-muted py-4 small"><i class="fa-solid fa-magnifying-glass fa-2x mb-2 d-block"></i>매장 이름이나 코드를 입력해서 검색하세요.</div>';
     }
 
-
-
     // 선택된 매장 태그 + 요일 렌더링
+    // ※ JSP EL 충돌 방지: 백틱(template literal) 대신 문자열 연결(+) 사용
     function renderStoreTags() {
-        const tagContainer  = document.getElementById('selectedStoreTags');
-        const daysContainer = document.getElementById('storeWorkDaysContainer');
+        var tagContainer  = document.getElementById('selectedStoreTags');
+        var daysContainer = document.getElementById('storeWorkDaysContainer');
         tagContainer.innerHTML  = '';
         daysContainer.innerHTML = '';
 
-        const allDays = ['월','화','수','목','금','토','일'];
+        var allDays = ['월','화','수','목','금','토','일'];
 
         selectedStores.forEach(function(store) {
-            // 태그
-            const tag = document.createElement('span');
+            // 매장 태그
+            var tag = document.createElement('span');
             tag.className = 'badge bg-primary d-flex align-items-center gap-1 px-3 py-2';
             tag.style.fontSize = '13px';
             tag.innerHTML = store.name + ' (' + store.id + ')' +
@@ -387,80 +361,83 @@
                 'style="font-size:10px;" onclick="removeStore(\'' + store.id + '\')"></button>';
             tagContainer.appendChild(tag);
 
-            // 해당 매장 요일 선택 섹션
-            const section = document.createElement('div');
+            // 요일 선택 섹션
+            var section = document.createElement('div');
             section.className = 'p-3 bg-light rounded-3 mb-2';
             section.id = 'days-section-' + store.id;
 
-            let btnHtml = allDays.map(day => `
-                <div class="m-0">
-                    <input class="d-none store-day-check" type="checkbox"
-                        id="day-${store.id}-${day}" value="${day}"
-                        data-store="${store.id}"
-                        onchange="updateStoreWorkDays()">
-                    <label class="btn btn-sm btn-outline-primary px-3 py-2 fw-bold"
-                        for="day-${store.id}-${day}">${day}</label>
-                </div>`).join('');
+            // 요일 버튼 HTML (문자열 연결로 생성 - JSP EL 충돌 방지)
+            var btnHtml = '';
+            allDays.forEach(function(day) {
+                var inputId = 'day-' + store.id + '-' + day;
+                btnHtml +=
+                    '<div class="m-0">' +
+                        '<input class="d-none store-day-check" type="checkbox"' +
+                            ' id="' + inputId + '"' +
+                            ' value="' + day + '"' +
+                            ' data-store="' + store.id + '"' +
+                            ' onchange="updateStoreWorkDays()">' +
+                        '<label class="btn btn-sm btn-outline-primary fw-bold"' +
+                            ' style="width:38px;padding:6px 0;text-align:center;"' +
+                            ' for="' + inputId + '">' + day + '</label>' +
+                    '</div>';
+            });
 
-            section.innerHTML = `
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <small class="fw-bold text-dark">
-                        <i class="fa-solid fa-store me-1 text-primary"></i>${store.name} 근무 요일
-                    </small>
-                    <small class="text-muted">선택 안 하면 협의 후 결정</small>
-                </div>
-                <div class="d-flex flex-wrap gap-2">${btnHtml}</div>`;
+            section.innerHTML =
+                '<div class="d-flex align-items-center justify-content-between mb-2">' +
+                    '<small class="fw-bold text-dark">' +
+                        '<i class="fa-solid fa-store me-1 text-primary"></i>' +
+                        store.name + ' 근무 요일' +
+                    '</small>' +
+                    '<small class="text-muted">선택 안 하면 협의 후 결정</small>' +
+                '</div>' +
+                '<div class="d-flex flex-nowrap gap-1">' + btnHtml + '</div>';
 
             daysContainer.appendChild(section);
         });
 
-        // 매장 없으면 컨테이너 초기화
         if (selectedStores.length === 0) {
             daysContainer.innerHTML = '';
         }
 
-        // hidden input 업데이트
-        document.getElementById('storeIdsHidden').value = selectedStores.map(s => s.id).join(',');
+        document.getElementById('storeIdsHidden').value = selectedStores.map(function(s) { return s.id; }).join(',');
         updateStoreWorkDays();
     }
 
     // 매장별 요일 → hidden input 업데이트
     // 형식: store01:월,화,수|store02:목,금
     function updateStoreWorkDays() {
-        const result = selectedStores.map(store => {
-            const checked = Array.from(
+        var result = selectedStores.map(function(store) {
+            var checked = Array.from(
                 document.querySelectorAll('.store-day-check[data-store="' + store.id + '"]:checked')
-            ).map(c => c.value);
+            ).map(function(c) { return c.value; });
             return store.id + ':' + checked.join(',');
         }).join('|');
 
         document.getElementById('storeWorkDaysHidden').value = result;
 
-        // 기존 workDaysHidden도 첫 번째 매장 기준으로 채움 (하위 호환)
-        const firstStore = selectedStores[0];
+        var firstStore = selectedStores[0];
         if (firstStore) {
-            const firstChecked = Array.from(
+            var firstChecked = Array.from(
                 document.querySelectorAll('.store-day-check[data-store="' + firstStore.id + '"]:checked')
-            ).map(c => c.value);
+            ).map(function(c) { return c.value; });
             document.getElementById('workDaysHidden').value = firstChecked.join(',');
         }
     }
 
-    // 매장 태그 제거
     function removeStore(id) {
-        selectedStores = selectedStores.filter(s => s.id !== id);
+        selectedStores = selectedStores.filter(function(s) { return s.id !== id; });
         renderStoreTags();
     }
 
-    // 모달 열릴 때 검색창 포커스
     document.getElementById('storeSearchModal').addEventListener('shown.bs.modal', function() {
         document.getElementById('modalStoreKeyword').focus();
     });
 
     function checkPwMatch() {
-        const pw = document.getElementById("pw").value;
-        const pwCheck = document.getElementById("pwCheck").value;
-        const msg = document.getElementById("pwMsg");
+        var pw = document.getElementById("pw").value;
+        var pwCheck = document.getElementById("pwCheck").value;
+        var msg = document.getElementById("pwMsg");
         if (!pw || !pwCheck) { msg.innerText = ""; return; }
         if (pw === pwCheck) {
             msg.style.color = "#1cc88a";
@@ -474,23 +451,21 @@
     document.getElementById('regForm').addEventListener('submit', function(e) {
         e.preventDefault();
 
-        // 아이디 중복확인 체크
         if (!idChecked) {
             showToast('아이디 중복확인을 해주세요.', 'warning');
             document.getElementById('inputId').focus();
             return;
         }
-        const pw = document.getElementById("pw").value;
-        const pwCheck = document.getElementById("pwCheck").value;
+        var pw = document.getElementById("pw").value;
+        var pwCheck = document.getElementById("pwCheck").value;
         if (pw !== pwCheck) {
             showToast('비밀번호가 일치하지 않습니다.', 'danger');
             return;
         }
         
-        const formData = new URLSearchParams(new FormData(this));
+        var formData = new URLSearchParams(new FormData(this));
 
-        // role 값 명시적으로 추가 (radio 버튼이 숨겨질 경우 대비)
-        const selectedRole = document.querySelector('input[name="role"]:checked');
+        var selectedRole = document.querySelector('input[name="role"]:checked');
         if (selectedRole) {
             formData.set('role', selectedRole.value);
         }
@@ -500,8 +475,8 @@
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: formData
         })
-        .then(res => res.json())
-        .then(data => {
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
             if (data.status === 'success') {
                 alert(data.message);
                 location.href = 'login.jsp';
@@ -509,7 +484,7 @@
                 alert(data.message);
             }
         })
-        .catch(err => showToast('서버 통신 오류가 발생했습니다.', 'danger'));
+        .catch(function(err) { showToast('서버 통신 오류가 발생했습니다.', 'danger'); });
     });
 </script>
 

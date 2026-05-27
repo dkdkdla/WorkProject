@@ -1,8 +1,9 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="work.dto.AttendanceDTO" %>
 <%@ page import="work.dto.MemberDTO" %>
+<%@ page import="work.util.PayCalcUtil" %>
 <%@ page import="java.util.*" %>
-<%@ page import="java.text.SimpleDateFormat" %>
+<%@ page import="java.time.*" %>
 <%
     // 세션 체크
     String _userId = (String) session.getAttribute("userId");
@@ -56,48 +57,61 @@
     int totalEstimatedSalary = 0;
     
     if (!searchMemId.equals("") && fullList.size() > 0) {
-        // 직원 정보는 이미 memberList에 있으므로 거기서 찾거나 필요시 전용 로직 수행
-        for(MemberDTO m : memberList) {
-            if(m.getId().equals(searchMemId)) {
+        // 직원 이름 조회
+        for (MemberDTO m : memberList) {
+            if (m.getId().equals(searchMemId)) {
                 hourlyWage = m.getHourlyWage();
                 targetName = m.getName();
                 break;
             }
         }
 
+        // IN/OUT 쌍을 매칭하여 PayCalcUtil로 급여 계산
+        // calcList는 오래된 순서(오름차순)로 정렬
         ArrayList<AttendanceDTO> calcList = new ArrayList<>(fullList);
-        Collections.reverse(calcList); 
+        Collections.reverse(calcList);
 
-        SimpleDateFormat sdfFull = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-        Calendar cal = Calendar.getInstance();
-        Map<String, Long> weeklyMap = new HashMap<>(); 
-        Map<String, Date> lastInTimeMap = new HashMap<>(); 
+        // storeKey → 마지막 IN 기록 매핑
+        Map<String, AttendanceDTO> lastInMap = new HashMap<>();
+        Map<String, Long> weeklyMap = new HashMap<>();
 
         for (AttendanceDTO dto : calcList) {
-            String storeKey = dto.getStoreName(); 
+            String storeKey = dto.getStoreName();
             try {
-                if ("출근".equals(dto.getAttType())) {
-                    lastInTimeMap.put(storeKey, sdfFull.parse(dto.getAttTime()));
-                } 
-                else if ("퇴근".equals(dto.getAttType())) {
-                    if (lastInTimeMap.containsKey(storeKey)) {
-                        Date inTime = lastInTimeMap.get(storeKey);
-                        Date outTime = sdfFull.parse(dto.getAttTime());
-                        long diff = outTime.getTime() - inTime.getTime();
-                        totalMinutes += (diff / (1000 * 60));
-                        cal.setTime(inTime);
-                        String weekKey = cal.get(Calendar.YEAR) + "-" + cal.get(Calendar.WEEK_OF_YEAR);
-                        weeklyMap.put(weekKey, weeklyMap.getOrDefault(weekKey, 0L) + (diff / (1000 * 60)));
-                        lastInTimeMap.remove(storeKey); 
+                if ("출근".equals(dto.getAttType()) || "IN".equals(dto.getAttType())) {
+                    lastInMap.put(storeKey, dto);
+                } else if ("퇴근".equals(dto.getAttType()) || "OUT".equals(dto.getAttType())) {
+                    if (lastInMap.containsKey(storeKey)) {
+                        AttendanceDTO inDto  = lastInMap.get(storeKey);
+                        String inTimeStr  = inDto.getAttTime();   // "yyyy-MM-dd HH:mm"
+                        String outTimeStr = dto.getAttTime();
+
+                        LocalDate  workDate  = LocalDate.parse(inTimeStr.substring(0, 10));
+                        LocalTime  startTime = LocalTime.parse(inTimeStr.substring(11, 16));
+                        LocalTime  endTime   = LocalTime.parse(outTimeStr.substring(11, 16));
+                        int rid = inDto.getRoleId();
+
+                        // PayCalcUtil로 급여 계산 (주간/야간/주말 자동 분리)
+                        int pay = PayCalcUtil.calcPay(rid, workDate, startTime, endTime);
+                        basePay += pay;
+
+                        // 주휴수당용 주간 근무 분 누적
+                        long diffMin = java.time.Duration.between(startTime, endTime).toMinutes();
+                        if (diffMin < 0) diffMin += 24 * 60; // 자정 넘기는 경우
+                        totalMinutes += diffMin;
+                        String weekKey = workDate.getYear() + "-" + workDate.get(java.time.temporal.WeekFields.ISO.weekOfWeekBasedYear());
+                        weeklyMap.put(weekKey, weeklyMap.getOrDefault(weekKey, 0L) + diffMin);
+
+                        lastInMap.remove(storeKey);
                     }
                 }
-            } catch(Exception e){}
+            } catch (Exception e) {}
         }
-        double recognizedHours = (totalMinutes / 30) * 0.5;
-        basePay = recognizedHours * hourlyWage;
+
+        // 주휴수당 계산 (주 15시간 이상 시 적용)
         for (String key : weeklyMap.keySet()) {
-            if (weeklyMap.get(key) >= 900) { 
-                double weekHours = Math.min(weeklyMap.get(key)/60.0, 40);
+            if (weeklyMap.get(key) >= 900) { // 900분 = 15시간
+                double weekHours = Math.min(weeklyMap.get(key) / 60.0, 40);
                 holidayPay += (weekHours / 40.0) * 8 * hourlyWage;
             }
         }
