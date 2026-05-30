@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.ListView;
-import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -111,13 +110,22 @@ public class StoreSelectActivity extends AppCompatActivity {
                                     Toast.LENGTH_LONG).show();
                         }
                     } else {
-                        SimpleAdapter adapter = new SimpleAdapter(
-                                this, storeList,
-                                android.R.layout.simple_list_item_1,
-                                new String[]{"display"},
-                                new int[]{android.R.id.text1}
-                        );
-                        lvStoreList.setAdapter(adapter);
+                        lvStoreList.setAdapter(new android.widget.BaseAdapter() {
+                            @Override public int getCount() { return storeList.size(); }
+                            @Override public Object getItem(int pos) { return storeList.get(pos); }
+                            @Override public long getItemId(int pos) { return pos; }
+                            @Override
+                            public android.view.View getView(int pos, android.view.View cv, android.view.ViewGroup p) {
+                                if (cv == null) cv = android.view.LayoutInflater.from(StoreSelectActivity.this)
+                                        .inflate(R.layout.item_store_select, p, false);
+                                java.util.HashMap<String,String> item = storeList.get(pos);
+                                android.widget.TextView tvName = cv.findViewById(R.id.tvSelectStoreName);
+                                android.widget.TextView tvId   = cv.findViewById(R.id.tvSelectStoreId);
+                                if (tvName != null) tvName.setText(item.get("storeName"));
+                                if (tvId   != null) tvId.setText(item.get("storeId"));
+                                return cv;
+                            }
+                        });
                     }
                 });
             }

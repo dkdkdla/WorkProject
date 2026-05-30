@@ -271,6 +271,16 @@
 </div>
 
 
+<script>
+function goMyAttendance() {
+    var today = new Date();
+    var y = today.getFullYear();
+    var m = String(today.getMonth()+1).padStart(2,'0');
+    var start = y + '-' + m + '-01';
+    var end   = y + '-' + m + '-' + String(new Date(y, today.getMonth()+1, 0).getDate()).padStart(2,'0');
+    location.href = 'MyAttendance?startDate=' + start + '&endDate=' + end;
+}
+</script>
 <%@ include file="footer.jsp" %>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

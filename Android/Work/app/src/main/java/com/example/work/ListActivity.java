@@ -78,8 +78,17 @@ public class ListActivity extends AppCompatActivity {
         // 3. 이벤트 리스너 설정
         setupListeners();
 
-        // 4. 초기 데이터 로드 (최근 기록)
-        new Thread(() -> loadData(currentUserId, "", "")).start();
+        // 날짜 기본값: 이번 달 1일 ~ 오늘
+        Calendar defCal = Calendar.getInstance();
+        selectedEndDate   = String.format(Locale.KOREA, "%d-%02d-%02d",
+                defCal.get(Calendar.YEAR), defCal.get(Calendar.MONTH)+1, defCal.get(Calendar.DAY_OF_MONTH));
+        selectedStartDate = String.format(Locale.KOREA, "%d-%02d-01",
+                defCal.get(Calendar.YEAR), defCal.get(Calendar.MONTH)+1);
+        btnStartDate.setText(selectedStartDate);
+        btnEndDate.setText(selectedEndDate);
+
+        // 4. 초기 데이터 로드 (이번 달)
+        new Thread(() -> loadData(currentUserId, selectedStartDate, selectedEndDate)).start();
     }
 
     private void initView() {

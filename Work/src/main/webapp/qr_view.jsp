@@ -3,6 +3,16 @@
     // 서블릿에서 보낸 에러 메시지 확인
     String errorMsg = (String)request.getAttribute("errorMsg");
     String userStoreId = (String)session.getAttribute("userStoreId");
+    // 매장 이름 조회
+    String qrStoreName = userStoreId;
+    if (userStoreId != null && !userStoreId.isEmpty()) {
+        work.dao.MemberDAO qvDao = new work.dao.MemberDAO();
+        java.util.ArrayList<String[]> qvStores = qvDao.getMyStoreList(
+            (String)session.getAttribute("userId"));
+        for (String[] s : qvStores) {
+            if (s[0].equals(userStoreId)) { qrStoreName = s[1]; break; }
+        }
+    }
 %>
 <!DOCTYPE html>
 <html lang="ko">
@@ -52,7 +62,7 @@
             </div>
         <% } else { %>
             <div class="mb-4">
-                <h4 class="fw-bold text-dark mb-1">출근 체크 전용 QR</h4>
+                <h4 class="fw-bold text-dark mb-1">출퇴근 체크 전용 QR</h4>
                 <p class="text-muted small">직원들이 매장에서 스캔할 수 있도록 인쇄하여 비치해 주세요.</p>
             </div>
 
@@ -60,7 +70,8 @@
             
             <div class="p-3 bg-light rounded-3 mb-4">
                 <span class="text-muted small d-block mb-1 text-uppercase fw-bold">활성화된 매장 ID</span>
-                <h3 class="fw-bold text-primary mb-0"><%=userStoreId%></h3>
+                <h3 class="fw-bold text-primary mb-1"><%=qrStoreName%></h3>
+                <small class="text-muted">매장 코드: <%=userStoreId%></small>
             </div>
 
             <div class="no-print">

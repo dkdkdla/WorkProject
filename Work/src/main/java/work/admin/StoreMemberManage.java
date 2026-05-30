@@ -14,6 +14,7 @@ import javax.servlet.http.HttpSession;
 import work.dao.MemberDAO;
 import work.dto.MemberDTO;
 import work.util.DBConn;
+import work.util.DBConn;
 
 @WebServlet("/StoreMemberManage")
 public class StoreMemberManage extends HttpServlet {
@@ -49,9 +50,28 @@ public class StoreMemberManage extends HttpServlet {
         // 소속 신청 대기 목록
         ArrayList<String[]> pendingList = dao.getPendingJoinsByOwner(userId);
 
-        request.setAttribute("myStores",    myStores);
-        request.setAttribute("memberList",  memberList);
-        request.setAttribute("pendingList", pendingList);
+        // 매장 급여 설정 로드
+        boolean useNightPay = true, useWeekendPay = true, useHolidayPay = true;
+        if (sessionStoreId != null && !sessionStoreId.isEmpty()) {
+            try (java.sql.Connection conn = DBConn.getConnection();
+                 java.sql.PreparedStatement ps = conn.prepareStatement(
+                     "SELECT use_night_pay, use_weekend_pay, use_holiday_pay FROM tb_store WHERE store_id = ?")) {
+                ps.setString(1, sessionStoreId);
+                java.sql.ResultSet rs = ps.executeQuery();
+                if (rs.next()) {
+                    useNightPay   = rs.getBoolean("use_night_pay");
+                    useWeekendPay = rs.getBoolean("use_weekend_pay");
+                    useHolidayPay = rs.getBoolean("use_holiday_pay");
+                }
+            } catch (Exception e) { e.printStackTrace(); }
+        }
+
+        request.setAttribute("myStores",     myStores);
+        request.setAttribute("memberList",   memberList);
+        request.setAttribute("pendingList",  pendingList);
+        request.setAttribute("useNightPay",  useNightPay);
+        request.setAttribute("useWeekendPay",useWeekendPay);
+        request.setAttribute("useHolidayPay",useHolidayPay);
         request.getRequestDispatcher("store_member_manage.jsp").forward(request, response);
     }
 

@@ -1,0 +1,5 @@
+package work.api;
+
+public class AdminMemberList {
+
+}

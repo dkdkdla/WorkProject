@@ -35,7 +35,7 @@
             <i class="fa-solid fa-store me-2 text-primary"></i>매장 관리
         </h3>
         <a href="default.jsp" class="btn btn-outline-secondary btn-sm fw-bold px-3">
-            <i class="fa-solid fa-arrow-left me-1"></i> 대시보드로
+            <i class="fa-solid fa-arrow-left me-1"></i> 메인
         </a>
     </div>
 

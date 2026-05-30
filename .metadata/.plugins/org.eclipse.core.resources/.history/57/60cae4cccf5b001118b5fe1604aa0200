@@ -1,0 +1,109 @@
+package work.admin;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.*;
+import work.dao.AttendanceDAO;
+import work.dto.AttendanceDTO;
+import work.dao.MemberDAO;
+import work.dto.MemberDTO;
+
+@WebServlet("/AdminHistory")
+public class AdminHistory extends HttpServlet {
+    private static final long serialVersionUID = 1L;
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setContentType("text/html; charset=UTF-8");
+        response.setCharacterEncoding("UTF-8");
+
+        HttpSession session = request.getSession();
+        String userId  = (String) session.getAttribute("userId");
+        String storeId = (String) session.getAttribute("userStoreId");
+
+        // 매장 선택 파라미터 처리 (좌측 매장 목록 클릭 시)
+        String selectedStoreId = request.getParameter("storeId");
+        if (selectedStoreId != null && !selectedStoreId.isEmpty()) {
+            storeId = selectedStoreId;
+            session.setAttribute("userStoreId", selectedStoreId);
+        }
+
+        // 날짜 기본값: 이번 달 1일 ~ 오늘
+        String startDate   = request.getParameter("startDate");
+        String endDate     = request.getParameter("endDate");
+        String searchMemId = request.getParameter("searchMemId");
+        String attFilter   = request.getParameter("attFilter");
+        if (searchMemId == null) searchMemId = "";
+        if (attFilter == null)   attFilter = "";
+
+        java.time.LocalDate today = java.time.LocalDate.now();
+        if (startDate == null || startDate.isEmpty())
+            startDate = today.withDayOfMonth(1).toString();
+        if (endDate == null || endDate.isEmpty())
+            endDate = today.toString();
+
+        try {
+            MemberDAO memDao = new MemberDAO();
+
+            // 점장의 매장 목록 (좌측 사이드바용)
+            ArrayList<String[]> myStores = getMyStores(userId);
+
+            AttendanceDAO attDao = new AttendanceDAO();
+            ArrayList<AttendanceDTO> fullList = attDao.getAttendanceByRange(storeId, startDate, endDate, searchMemId, attFilter);
+            ArrayList<MemberDTO>     memberList = memDao.getStoreMembers(storeId);
+
+            String isApp = request.getParameter("isApp");
+            if ("true".equals(isApp)) {
+                response.setContentType("application/json; charset=UTF-8");
+                PrintWriter out = response.getWriter();
+                StringBuilder sb = new StringBuilder();
+                sb.append("{\"status\":\"success\", \"data\":[");
+                if (fullList != null) {
+                    for (int i = 0; i < fullList.size(); i++) {
+                        AttendanceDTO dto = fullList.get(i);
+                        sb.append("{\"idx\":\"").append(dto.getIdx()).append("\",")
+                          .append("\"mem_id\":\"").append(dto.getMemberId()).append("\",")
+                          .append("\"name\":\"").append(dto.getStoreName()).append("\",")
+                          .append("\"type\":\"").append(dto.getAttType()).append("\",")
+                          .append("\"time\":\"").append(dto.getAttTime()).append("\"}");
+                        if (i < fullList.size() - 1) sb.append(",");
+                    }
+                }
+                sb.append("]}");
+                out.print(sb.toString());
+            } else {
+                request.setAttribute("fullList",    fullList);
+                request.setAttribute("memberList",  memberList);
+                request.setAttribute("myStores",    myStores);
+                request.setAttribute("currentStoreId", storeId);
+                request.setAttribute("startDate",   startDate);
+                request.setAttribute("endDate",     endDate);
+                request.setAttribute("searchMemId", searchMemId);
+                request.setAttribute("attFilter",   attFilter);
+                request.getRequestDispatcher("admin_attendance.jsp").forward(request, response);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private ArrayList<String[]> getMyStores(String userId) {
+        ArrayList<String[]> list = new ArrayList<>();
+        String sql = "SELECT s.store_id, s.store_name " +
+                     "FROM tb_store s " +
+                     "JOIN tb_my_stores m ON s.store_id = m.store_id " +
+                     "WHERE m.mem_id = ? AND m.join_status = 'ACTIVE' AND s.store_status = 'ACTIVE' " +
+                     "ORDER BY s.store_name ASC";
+        try (java.sql.Connection conn = work.util.DBConn.getConnection();
+             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, userId);
+            try (java.sql.ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next())
+                    list.add(new String[]{rs.getString("store_id"), rs.getString("store_name")});
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
+    }
+}

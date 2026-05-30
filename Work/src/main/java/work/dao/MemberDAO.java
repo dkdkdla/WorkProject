@@ -651,11 +651,11 @@ public class MemberDAO {
 
     // 현재 매장 기준 역할명 + 시급 조회
     public String[] getStoreRoleInfo(String memId, String storeId) {
-        // 해당 매장의 역할로 시급/역할명 조회
+        // tb_my_stores 기반으로 매장별 역할명/시급 조회
         String sql = "SELECT r.role_name, r.hourly_wage " +
                      "FROM tb_role r " +
-                     "JOIN tb_member m ON m.role_id = r.role_id " +
-                     "WHERE m.mem_id = ? AND r.store_id = ?";
+                     "JOIN tb_my_stores ms ON ms.role_id = r.role_id " +
+                     "WHERE ms.mem_id = ? AND ms.store_id = ?";
         try (Connection conn = DBConn.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, memId);

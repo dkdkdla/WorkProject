@@ -219,21 +219,34 @@ public class AttendanceDAO {
     }
     
     public java.util.ArrayList<work.dto.AttendanceDTO> getAttendanceByRange(String storeId, String startDate, String endDate, String searchMemId) {
+        return getAttendanceByRange(storeId, startDate, endDate, searchMemId, "");
+    }
+
+    public java.util.ArrayList<work.dto.AttendanceDTO> getAttendanceByRange(String storeId, String startDate, String endDate, String searchMemId, String attFilter) {
         java.util.ArrayList<work.dto.AttendanceDTO> list = new java.util.ArrayList<>();
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         
         
-        String sql = "SELECT a.idx, m.mem_name, a.att_type, a.att_time, ISNULL(a.role_id, 0) as role_id " +
+        String sql = "SELECT a.idx, a.mem_id, m.mem_name, a.att_type, a.att_time, ISNULL(a.role_id, 0) as role_id, " +
+                     "ISNULL(ms.work_type, '') as work_type " +
                      "FROM tb_attendance a " +
                      "JOIN tb_member m ON a.mem_id = m.mem_id " +
+                     "LEFT JOIN tb_my_stores ms ON a.mem_id = ms.mem_id AND a.store_id = ms.store_id " +
                      "WHERE a.store_id = ? " +
                      "AND a.att_time BETWEEN ? AND ? "; 
         
         
         if (searchMemId != null && !searchMemId.equals("")) {
             sql += "AND a.mem_id = ? ";
+        }
+        if (attFilter != null && !attFilter.isEmpty()) {
+            if ("IN".equals(attFilter)) {
+                sql += "AND (a.att_type = 'IN' OR a.att_type = '출근') ";
+            } else {
+                sql += "AND (a.att_type = 'OUT' OR a.att_type = '퇴근') ";
+            }
         }
         
         sql += "ORDER BY a.att_time DESC"; 
@@ -249,6 +262,7 @@ public class AttendanceDAO {
             if (searchMemId != null && !searchMemId.equals("")) {
                 pstmt.setString(4, searchMemId);
             }
+            // attFilter는 SQL에 리터럴로 넣었으므로 별도 파라미터 불필요
             
             rs = pstmt.executeQuery();
             
@@ -256,10 +270,12 @@ public class AttendanceDAO {
                 work.dto.AttendanceDTO dto = new work.dto.AttendanceDTO();
                 
                 dto.setIdx(rs.getInt("idx"));
-                dto.setStoreName(rs.getString("mem_name")); 
+                dto.setMemberId(rs.getString("mem_id"));
+                dto.setStoreName(rs.getString("mem_name"));
                 dto.setAttType(rs.getString("att_type"));
                 dto.setAttTime(rs.getString("att_time").substring(0, 16));
                 dto.setRoleId(rs.getInt("role_id"));
+                dto.setWorkType(rs.getString("work_type"));
                 list.add(dto);
             }
         } catch (Exception e) {
@@ -336,9 +352,11 @@ public class AttendanceDAO {
         ResultSet rs = null;
         
         
-        String sql = "SELECT a.att_time, a.att_type, ISNULL(s.store_name, '삭제된 매장') as store_name " +
+        String sql = "SELECT a.att_time, a.att_type, ISNULL(s.store_name, '삭제된 매장') as store_name, " +
+                     "ISNULL(a.role_id, 0) as role_id, ISNULL(ms.work_type, '') as work_type " +
                      "FROM tb_attendance a " +
                      "LEFT JOIN tb_store s ON a.store_id = s.store_id " +
+                     "LEFT JOIN tb_my_stores ms ON a.mem_id = ms.mem_id AND a.store_id = ms.store_id " +
                      "WHERE a.mem_id = ? AND CONVERT(VARCHAR, a.att_time, 120) LIKE ? " +
                      "ORDER BY a.att_time DESC";
         
@@ -358,6 +376,8 @@ public class AttendanceDAO {
                 dto.setAttTime(timeStr);
                 dto.setAttType(rs.getString("att_type"));
                 dto.setStoreName(rs.getString("store_name"));
+                dto.setRoleId(rs.getInt("role_id"));
+                dto.setWorkType(rs.getString("work_type"));
                 list.add(dto);
             }
         } catch (Exception e) {
@@ -368,6 +388,40 @@ public class AttendanceDAO {
         return list;
     }
     
+    // 날짜 범위로 조회 (직원 본인용)
+    public java.util.ArrayList<work.dto.AttendanceDTO> getMyAttendanceByRange(String memId, String startDate, String endDate) {
+        java.util.ArrayList<work.dto.AttendanceDTO> list = new java.util.ArrayList<>();
+        Connection conn = null; PreparedStatement pstmt = null; ResultSet rs = null;
+        String sql = "SELECT a.att_time, a.att_type, ISNULL(s.store_name, '삭제된 매장') as store_name, " +
+                     "ISNULL(a.role_id, 0) as role_id, ISNULL(ms.work_type, '') as work_type " +
+                     "FROM tb_attendance a " +
+                     "LEFT JOIN tb_store s ON a.store_id = s.store_id " +
+                     "LEFT JOIN tb_my_stores ms ON a.mem_id = ms.mem_id AND a.store_id = ms.store_id " +
+                     "WHERE a.mem_id = ? AND a.att_time BETWEEN ? AND ? " +
+                     "ORDER BY a.att_time DESC";
+        try {
+            conn = DBConn.getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, memId);
+            pstmt.setString(2, startDate + " 00:00:00");
+            pstmt.setString(3, endDate   + " 23:59:59");
+            rs = pstmt.executeQuery();
+            while (rs.next()) {
+                work.dto.AttendanceDTO dto = new work.dto.AttendanceDTO();
+                String t = rs.getString("att_time");
+                if (t.length() > 16) t = t.substring(0, 16);
+                dto.setAttTime(t);
+                dto.setAttType(rs.getString("att_type"));
+                dto.setStoreName(rs.getString("store_name"));
+                dto.setRoleId(rs.getInt("role_id"));
+                dto.setWorkType(rs.getString("work_type"));
+                list.add(dto);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        finally { closeAll(conn, pstmt, rs); }
+        return list;
+    }
+
     public work.dto.AttendanceDTO getLastRecord(String memId, String storeId) {
         work.dto.AttendanceDTO dto = null;
         Connection conn = null;

@@ -1,46 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:padding="15dp"
-    android:gravity="center_vertical"
-    android:background="@drawable/bg_button_navy"
-    android:backgroundTint="#FFFFFF"
-    android:layout_marginBottom="5dp">
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="5dp"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="3dp"
+    app:cardBackgroundColor="#FFFFFF">
 
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical">
 
+        <!-- 이니셜 아이콘 -->
         <TextView
-            android:id="@+id/tvMemberName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="직원 이름"
+            android:id="@+id/tvInitial"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:text="직"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="#333333"/>
+            android:textColor="#FFFFFF"
+            android:background="#FF1a237e"
+            android:gravity="center"
+            android:layout_marginEnd="14dp"/>
 
-        <TextView
-            android:id="@+id/tvMemberId"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="아이디 / 전화번호"
-            android:textSize="14sp"
-            android:textColor="#888888"/>
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvMemberName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="직원 이름"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#212121"/>
+
+            <TextView
+                android:id="@+id/tvMemberId"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="아이디 / 전화번호"
+                android:textSize="13sp"
+                android:textColor="#6c757d"
+                android:layout_marginTop="2dp"/>
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnDeleteMember"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="제외"
+            android:textSize="12sp"
+            android:backgroundTint="#FFe74a3b"
+            android:textColor="#FFFFFF"
+            app:cornerRadius="8dp"/>
     </LinearLayout>
-
-    <Button
-        android:id="@+id/btnDeleteMember"
-        android:layout_width="wrap_content"
-        android:layout_height="40dp"
-        android:text="삭제"
-        android:textSize="13sp"
-        android:background="@drawable/bg_button_navy"
-        android:backgroundTint="#FF5252"
-        android:textColor="#FFFFFF"/>
-
-</LinearLayout>
+</androidx.cardview.widget.CardView>

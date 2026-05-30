@@ -3,184 +3,123 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
-    android:background="@color/gray_bg">
+    android:background="@color/gray_bg"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="30dp"
-        android:gravity="center">
+        android:orientation="vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="회원가입"
-            android:textSize="30sp"
-            android:textStyle="bold"
-            android:textColor="@color/navy_primary"
-            android:layout_marginBottom="30dp"/>
-
-        <EditText
-            android:id="@+id/etRegId"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:hint="아이디 *"
-            android:background="@drawable/bg_button_navy"
-            android:backgroundTint="#FFFFFF"
-            android:paddingHorizontal="20dp"
-            android:layout_marginBottom="10dp"/>
-
-        <com.google.android.material.textfield.TextInputLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:passwordToggleEnabled="true"
-            app:boxBackgroundMode="none"
-            android:layout_marginBottom="10dp">
+            android:background="@color/navy_primary"
+            android:padding="24dp"
+            android:paddingTop="48dp"
+            android:paddingBottom="24dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="AlbaPass" android:textSize="13sp" android:textStyle="bold"
+                android:textColor="@color/orange_accent" android:layout_marginBottom="4dp"/>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="회원가입" android:textSize="22sp" android:textStyle="bold"
+                android:textColor="#FFFFFF"/>
+        </LinearLayout>
 
-            <EditText
-                android:id="@+id/etRegPw"
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#FFFFFF">
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:hint="비밀번호 *"
-                android:inputType="textPassword"
-                android:background="@drawable/bg_button_navy"
-                android:backgroundTint="#FFFFFF"
-                android:paddingHorizontal="20dp"/>
-        </com.google.android.material.textfield.TextInputLayout>
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:passwordToggleEnabled="true"
-            app:boxBackgroundMode="none"
-            android:layout_marginBottom="10dp">
+                <EditText android:id="@+id/etRegId"
+                    android:layout_width="match_parent" android:layout_height="48dp"
+                    android:hint="아이디 *" android:background="#FFF0F4FF"
+                    android:paddingHorizontal="14dp" android:layout_marginBottom="10dp"/>
 
-            <EditText
-                android:id="@+id/etRegPwConfirm"
-                android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:hint="비밀번호 확인 *"
-                android:inputType="textPassword"
-                android:background="@drawable/bg_button_navy"
-                android:backgroundTint="#FFFFFF"
-                android:paddingHorizontal="20dp"/>
-        </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    app:passwordToggleEnabled="true" app:boxBackgroundMode="none"
+                    android:layout_marginBottom="10dp">
+                    <EditText android:id="@+id/etRegPw"
+                        android:layout_width="match_parent" android:layout_height="48dp"
+                        android:hint="비밀번호 *" android:inputType="textPassword"
+                        android:background="#FFF0F4FF" android:paddingHorizontal="14dp"/>
+                </com.google.android.material.textfield.TextInputLayout>
 
-        <EditText
-            android:id="@+id/etRegName"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:hint="이름 *"
-            android:background="@drawable/bg_button_navy"
-            android:backgroundTint="#FFFFFF"
-            android:paddingHorizontal="20dp"
-            android:layout_marginBottom="10dp"/>
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    app:passwordToggleEnabled="true" app:boxBackgroundMode="none"
+                    android:layout_marginBottom="10dp">
+                    <EditText android:id="@+id/etRegPwConfirm"
+                        android:layout_width="match_parent" android:layout_height="48dp"
+                        android:hint="비밀번호 확인 *" android:inputType="textPassword"
+                        android:background="#FFF0F4FF" android:paddingHorizontal="14dp"/>
+                </com.google.android.material.textfield.TextInputLayout>
 
-        <EditText
-            android:id="@+id/etRegPhone"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:hint="전화번호 *"
-            android:inputType="phone"
-            android:background="@drawable/bg_button_navy"
-            android:backgroundTint="#FFFFFF"
-            android:paddingHorizontal="20dp"
-            android:layout_marginBottom="10dp"/>
+                <EditText android:id="@+id/etRegName"
+                    android:layout_width="match_parent" android:layout_height="48dp"
+                    android:hint="이름 *" android:background="#FFF0F4FF"
+                    android:paddingHorizontal="14dp" android:layout_marginBottom="10dp"/>
 
-        <!-- 생년월일 선택 버튼 -->
-        <Button
-            android:id="@+id/btnBirthPicker"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:text="생년월일 선택 *"
-            android:textSize="15sp"
-            android:textColor="#888888"
-            android:backgroundTint="#FFFFFF"
-            android:gravity="center_vertical|start"
-            android:paddingHorizontal="20dp"
-            android:layout_marginBottom="10dp"
-            app:strokeColor="#CCCCCC"
-            app:strokeWidth="1dp"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
+                <EditText android:id="@+id/etRegPhone"
+                    android:layout_width="match_parent" android:layout_height="48dp"
+                    android:hint="전화번호 *" android:inputType="phone"
+                    android:background="#FFF0F4FF" android:paddingHorizontal="14dp"
+                    android:layout_marginBottom="10dp"/>
 
-        <EditText
-            android:id="@+id/etWage"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:hint="시급 (선택)"
-            android:inputType="number"
-            android:background="@drawable/bg_button_navy"
-            android:backgroundTint="#FFFFFF"
-            android:paddingHorizontal="20dp"
-            android:layout_marginBottom="20dp"/>
+                <Button android:id="@+id/btnBirthPicker"
+                    android:layout_width="match_parent" android:layout_height="48dp"
+                    android:text="생년월일 선택 *" android:textSize="14sp"
+                    android:textColor="#888888" android:backgroundTint="#FFF0F4FF"
+                    android:gravity="center_vertical|start" android:paddingHorizontal="14dp"
+                    android:layout_marginBottom="10dp"
+                    app:strokeColor="#CCCCCC" app:strokeWidth="1dp"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
 
-        <!-- 매장 검색 버튼 (직원용) -->
-        <Button
-            android:id="@+id/btnStoreSearch"
-            android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:text="소속 매장 검색 (선택)"
-            android:textSize="15sp"
-            android:textColor="#1565C0"
-            android:backgroundTint="#E3F2FD"
-            android:gravity="center_vertical|start"
-            android:paddingHorizontal="20dp"
-            android:layout_marginBottom="10dp"
-            app:strokeColor="#1565C0"
-            app:strokeWidth="1dp"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
+                <EditText android:id="@+id/etWage"
+                    android:layout_width="match_parent" android:layout_height="48dp"
+                    android:hint="시급 (선택)" android:inputType="number"
+                    android:background="#FFF0F4FF" android:paddingHorizontal="14dp"
+                    android:layout_marginBottom="10dp"/>
 
-        <!-- 선택된 매장 ID 저장용 (숨김) -->
-        <EditText
-            android:id="@+id/etStoreId"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:visibility="gone"/>
+                <Button android:id="@+id/btnStoreSearch"
+                    android:layout_width="match_parent" android:layout_height="48dp"
+                    android:text="소속 매장 검색 (선택)" android:textSize="14sp"
+                    android:textColor="@color/navy_primary" android:backgroundTint="#FFE8ECFF"
+                    android:layout_marginBottom="10dp"
+                    app:strokeColor="@color/navy_primary" app:strokeWidth="1dp"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
 
-        <!-- 점장 가입 안내 (관리자 체크 시 표시) -->
-        <TextView
-            android:id="@+id/tvAdminNotice"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="점장 가입 신청 후 전체관리자 승인이 완료되면 로그인 가능합니다."
-            android:textColor="#E65100"
-            android:textSize="13sp"
-            android:background="#FFF3E0"
-            android:padding="12dp"
-            android:layout_marginBottom="10dp"
-            android:visibility="gone"/>
+                <EditText android:id="@+id/etStoreId"
+                    android:layout_width="match_parent" android:layout_height="0dp"
+                    android:visibility="gone"/>
 
-        <CheckBox
-            android:id="@+id/chkIsAdmin"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="관리자(점장)로 가입하기"
-            android:textColor="@color/navy_primary"
-            android:textSize="16sp"
-            android:layout_gravity="left"
-            android:layout_marginBottom="10dp"/>
+                <TextView android:id="@+id/tvAdminNotice"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:text="점장 가입 신청 후 전체관리자 승인이 완료되면 로그인 가능합니다."
+                    android:textColor="#E65100" android:textSize="12sp"
+                    android:background="#FFF3E0" android:padding="12dp"
+                    android:layout_marginBottom="10dp" android:visibility="gone"/>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="* 표시는 필수 입력 항목입니다."
-            android:textColor="#FF5252"
-            android:textSize="13sp"
-            android:gravity="left"
-            android:layout_marginBottom="10dp"/>
+                <CheckBox android:id="@+id/chkIsAdmin"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="관리자(점장)로 가입하기" android:textColor="@color/navy_primary"
+                    android:textSize="15sp" android:layout_marginBottom="16dp"/>
 
-        <Button
-            android:id="@+id/btnRegisterAction"
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:text="가입 완료"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:background="@drawable/bg_button_navy"
-            android:textColor="@color/white"
-            android:elevation="5dp"/>
-
+                <Button android:id="@+id/btnRegisterAction"
+                    android:layout_width="match_parent" android:layout_height="52dp"
+                    android:text="가입 완료" android:textSize="16sp" android:textStyle="bold"
+                    android:backgroundTint="@color/navy_primary" android:textColor="#FFFFFF"
+                    app:cornerRadius="12dp"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
     </LinearLayout>
 </ScrollView>

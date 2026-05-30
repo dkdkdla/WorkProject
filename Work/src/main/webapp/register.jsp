@@ -372,7 +372,7 @@
                 var inputId = 'day-' + store.id + '-' + day;
                 btnHtml +=
                     '<div class="m-0">' +
-                        '<input class="d-none store-day-check" type="checkbox"' +
+                        '<input class="btn-check store-day-check" type="checkbox"' +
                             ' id="' + inputId + '"' +
                             ' value="' + day + '"' +
                             ' data-store="' + store.id + '"' +

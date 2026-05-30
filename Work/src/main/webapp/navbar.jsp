@@ -11,10 +11,14 @@
     ArrayList<String[]> myStoreList = new ArrayList<>();
     
     // 로그인 상태일 때만 DB 조회
+    int navPendingCount = 0;
     if (navUserId != null) {
         try {
             MemberDAO navDao = new MemberDAO();
             myStoreList = navDao.getMyStoreList(navUserId);
+            if ("A".equals(navUserRole)) {
+                navPendingCount = navDao.getPendingJoinsByOwner(navUserId).size();
+            }
         } catch (Exception e) {
             System.err.println("Navbar Store List Error: " + e.getMessage());
         }
@@ -54,6 +58,15 @@
                 </button>
                 <% } %>
 
+                <% if ("A".equals(navUserRole) && navPendingCount > 0) { %>
+                <a href="StoreMemberManage" class="btn btn-sm me-2 position-relative"
+                    style="background:rgba(255,255,255,0.1); border:1.5px solid rgba(255,255,255,0.3); color:#fff; border-radius:20px; padding:4px 10px;"
+                    title="소속 신청 대기">
+                    <i class="fa-solid fa-bell"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                        style="font-size:10px;"><%=navPendingCount%></span>
+                </a>
+                <% } %>
                 <form action="<%=request.getContextPath()%>/Logout" method="post" class="m-0">
                     <button type="submit" class="btn btn-danger btn-sm">로그아웃</button>
                 </form>

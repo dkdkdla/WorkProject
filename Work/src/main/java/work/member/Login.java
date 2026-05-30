@@ -69,7 +69,13 @@ public class Login extends HttpServlet {
             // SA(전체관리자)는 별도 페이지로 이동
             String redirectPage = "SA".equals(user.getRole()) ? "superadmin_main.jsp" : "default.jsp";
 
-            out.print("{\"status\":\"success\", \"message\":\"환영합니다, " + user.getName() + "님!\", \"role\":\"" + user.getRole() + "\", \"redirect\":\"" + redirectPage + "\"}");
+            out.print("{\"status\":\"success\""
+                + ", \"message\":\"환영합니다, " + user.getName() + "님!\""
+                + ", \"role\":\"" + user.getRole() + "\""
+                + ", \"name\":\"" + user.getName() + "\""
+                + ", \"id\":\"" + user.getId() + "\""
+                + ", \"storeId\":\"" + (user.getStoreId() != null ? user.getStoreId() : "") + "\""
+                + ", \"redirect\":\"" + redirectPage + "\"}");
         } else {
             out.print("{\"status\":\"fail\", \"message\":\"아이디 또는 비밀번호가 일치하지 않습니다.\"}");
         }

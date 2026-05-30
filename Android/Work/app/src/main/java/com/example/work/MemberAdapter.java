@@ -51,8 +51,9 @@ public class MemberAdapter extends BaseAdapter {
         if (convertView == null) {
             convertView = LayoutInflater.from(context).inflate(R.layout.item_member, parent, false);
             holder = new ViewHolder();
-            holder.tvName = convertView.findViewById(R.id.tvMemberName);
-            holder.tvId = convertView.findViewById(R.id.tvMemberId);
+            holder.tvName    = convertView.findViewById(R.id.tvMemberName);
+            holder.tvId      = convertView.findViewById(R.id.tvMemberId);
+            holder.tvInitial = convertView.findViewById(R.id.tvInitial);
             holder.btnDelete = convertView.findViewById(R.id.btnDeleteMember);
             convertView.setTag(holder);
         } else {
@@ -61,6 +62,12 @@ public class MemberAdapter extends BaseAdapter {
 
         MemberDTO item = items.get(position);
         holder.tvName.setText(item.getName());
+        // 이니셜 원형 뱃지 (이름 첫 글자)
+        if (holder.tvInitial != null) {
+            String name = item.getName();
+            holder.tvInitial.setText(name != null && !name.isEmpty()
+                    ? String.valueOf(name.charAt(0)) : "?");
+        }
 
         DecimalFormat df = new DecimalFormat("###,###");
         String formattedWage = df.format(item.getHourlyWage());
@@ -75,7 +82,7 @@ public class MemberAdapter extends BaseAdapter {
                         // 서버에 삭제 요청 (비동기)
                         new Thread(() -> requestDeleteMember(item.getId(), position)).start();
                     })
-                    .setNegativeButton("취on", null)
+                    .setNegativeButton("취소", null)
                     .show();
         });
 
@@ -125,7 +132,7 @@ public class MemberAdapter extends BaseAdapter {
 
     // 뷰 홀더 클래스 (성능 최적화용)
     static class ViewHolder {
-        TextView tvName, tvId;
+        TextView tvName, tvId, tvInitial;
         Button btnDelete;
     }
 }

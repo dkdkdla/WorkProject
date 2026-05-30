@@ -68,6 +68,16 @@ public class AdminHistoryActivity extends AppCompatActivity {
         adapter = new HistoryAdapter();
         listView.setAdapter(adapter);
 
+        // 날짜 기본값: 이번 달 1일 ~ 오늘
+        Calendar cal = Calendar.getInstance();
+        selectedEndDate   = String.format(Locale.KOREA, "%d-%02d-%02d",
+                cal.get(Calendar.YEAR), cal.get(Calendar.MONTH)+1, cal.get(Calendar.DAY_OF_MONTH));
+        cal.set(Calendar.DAY_OF_MONTH, 1);
+        selectedStartDate = String.format(Locale.KOREA, "%d-%02d-%02d",
+                cal.get(Calendar.YEAR), cal.get(Calendar.MONTH)+1, 1);
+        btnStartDate.setText(selectedStartDate);
+        btnEndDate.setText(selectedEndDate);
+
         // 4. 직원 목록 로드 (스피너 구성)
         new Thread(this::loadEmployees).start();
 

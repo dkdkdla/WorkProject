@@ -1,145 +1,141 @@
 <%@ page language="java" contentType="application/vnd.ms-excel; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ page import="java.sql.*" %>
-<%@ page import="java.util.*" %>
+<%@ page import="java.sql.*, java.time.*, java.util.*" %>
+<%@ page import="work.util.DBConn, work.util.PayCalcUtil" %>
 <%
-    
-    String storeId = request.getParameter("storeId");
-    String year = request.getParameter("year");
-    String month = request.getParameter("month");
+    String userRole = (String)session.getAttribute("userRole");
+    if (!"A".equals(userRole)) { response.sendRedirect("login.jsp"); return; }
 
-    
-    String fileName = "salary_" + year + "_" + month + ".xls";
-    
-    
-    String userAgent = request.getHeader("User-Agent");
-    if (userAgent != null && userAgent.indexOf("MSIE") > -1) {
-        fileName = java.net.URLEncoder.encode(fileName, "UTF-8");
-    } else {
-        fileName = new String(fileName.getBytes("UTF-8"), "ISO-8859-1");
+    String storeId = request.getParameter("storeId");
+    String startDate = request.getParameter("startDate");
+    String endDate   = request.getParameter("endDate");
+
+    if (storeId == null || startDate == null || endDate == null) {
+        out.print("파라미터 누락"); return;
     }
-    
+
+    String fileName = "salary_" + startDate + "_" + endDate + ".xls";
+    fileName = new String(fileName.getBytes("UTF-8"), "ISO-8859-1");
     response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
     response.setHeader("Content-Description", "JSP Generated Data");
+
+    // 직원 목록 조회 (tb_my_stores 기반)
+    List<String[]> members = new ArrayList<>();
+    String memSql = "SELECT m.mem_id, m.mem_name, m.hourly_wage, ISNULL(ms.work_type,'') as work_type " +
+                    "FROM tb_my_stores ms JOIN tb_member m ON ms.mem_id = m.mem_id " +
+                    "WHERE ms.store_id = ? AND (ms.join_status = 'ACTIVE' OR ms.join_status IS NULL) AND m.mem_role = 'S' " +
+                    "ORDER BY m.mem_name";
+    try (Connection conn = DBConn.getConnection();
+         PreparedStatement ps = conn.prepareStatement(memSql)) {
+        ps.setString(1, storeId);
+        ResultSet rs = ps.executeQuery();
+        while (rs.next()) members.add(new String[]{
+            rs.getString("mem_id"), rs.getString("mem_name"),
+            rs.getString("hourly_wage"), rs.getString("work_type")
+        });
+    }
+
+    // 직원별 급여 계산
+    List<String[]> rows = new ArrayList<>();
+    String attSql = "SELECT att_type, att_time, ISNULL(role_id,0) as role_id FROM tb_attendance " +
+                    "WHERE mem_id = ? AND store_id = ? " +
+                    "AND (att_type IN ('IN','OUT','출근','퇴근')) " +
+                    "AND CAST(att_time AS DATE) BETWEEN ? AND ? ORDER BY att_time ASC";
+
+    try (Connection conn = DBConn.getConnection()) {
+        for (String[] m : members) {
+            String memId = m[0], name = m[1], wt = m[3];
+            int wage = 0; try { wage = Integer.parseInt(m[2]); } catch(Exception e){}
+
+            long totalMin = 0; int totalPay = 0;
+            Map<String, Object[]> lastInMap = new HashMap<>();
+
+            try (PreparedStatement ps = conn.prepareStatement(attSql)) {
+                ps.setString(1, memId); ps.setString(2, storeId);
+                ps.setString(3, startDate); ps.setString(4, endDate);
+                ResultSet rs = ps.executeQuery();
+                while (rs.next()) {
+                    String type = rs.getString("att_type");
+                    String timeStr = rs.getString("att_time").substring(0,16);
+                    int rid = rs.getInt("role_id");
+                    if ("IN".equals(type) || "출근".equals(type)) {
+                        lastInMap.put("k", new Object[]{timeStr, rid});
+                    } else if (("OUT".equals(type) || "퇴근".equals(type)) && lastInMap.containsKey("k")) {
+                        Object[] in = lastInMap.get("k");
+                        String inStr = (String)in[0]; int rid2 = (int)in[1];
+                        try {
+                            LocalDate wd = LocalDate.parse(inStr.substring(0,10));
+                            LocalTime st = LocalTime.parse(inStr.substring(11,16));
+                            LocalTime et = LocalTime.parse(timeStr.substring(11,16));
+                            int pay = PayCalcUtil.calcPay(rid2, wd, st, et, wt);
+                            totalPay += pay;
+                            long diff = Duration.between(st, et).toMinutes();
+                            if (diff < 0) diff += 1440;
+                            totalMin += diff;
+                        } catch(Exception e){}
+                        lastInMap.remove("k");
+                    }
+                }
+            }
+            if (totalMin > 0) {
+                rows.add(new String[]{
+                    name, memId,
+                    String.format("%dh %dm", totalMin/60, totalMin%60),
+                    String.format("%,d", wage),
+                    String.format("%,d", totalPay)
+                });
+            }
+        }
+    } catch(Exception e) {
+        e.printStackTrace();
+        rows.add(new String[]{"[오류]", e.getMessage(), "-", "-", "0"});
+    }
 %>
-<html>
-<head>
+<html><head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <style>
-    table { border-collapse: collapse; width: 100%; }
-    th { background-color: #f0f0f0; border: 1px solid #000; padding: 10px; font-weight: bold; }
-    td { border: 1px solid #000; padding: 10px; text-align: center; }
-    .money { text-align: right; }
+    table { border-collapse:collapse; width:100%; }
+    th { background:#4e73df; color:#fff; border:1px solid #000; padding:8px 12px; font-weight:bold; }
+    td { border:1px solid #ccc; padding:8px 12px; }
+    .money { text-align:right; }
+    .center { text-align:center; }
+    h2 { color:#333; margin-bottom:8px; }
+    .sub { color:#666; font-size:13px; margin-bottom:16px; }
 </style>
-</head>
-<body>
-    <h2><%=year%>년 <%=month%>월 급여 정산 내역</h2>
+</head><body>
+    <h2>급여 정산 내역</h2>
+    <p class="sub">매장: <%=storeId%> &nbsp;|&nbsp; 기간: <%=startDate%> ~ <%=endDate%></p>
     <table>
         <thead>
             <tr>
-                <th>이름 (아이디)</th>
+                <th>이름</th>
+                <th>아이디</th>
                 <th>총 근무시간</th>
-                <th>시급</th>
-                <th>총 급여</th>
+                <th>기본 시급</th>
+                <th>예상 급여</th>
             </tr>
         </thead>
         <tbody>
-<%
-    
-    String startDate = year + "-" + (month.length()==1 ? "0"+month : month) + "-01 00:00:00";
-    int nextMonth = Integer.parseInt(month) + 1;
-    String nextYear = year;
-    if(nextMonth > 12) { nextMonth = 1; nextYear = String.valueOf(Integer.parseInt(year)+1); }
-    String endDate = nextYear + "-" + (nextMonth<10 ? "0"+nextMonth : nextMonth) + "-01 00:00:00";
-
-    String dbUrl = "jdbc:sqlserver://localhost:1433;databaseName=Work;encrypt=false";
-    String dbId = "WorkUser";
-    String dbPw = "pass";
-
-    Connection conn = null;
-    PreparedStatement pstmt = null;
-    ResultSet rs = null;
-
-    try {
-        Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-        conn = DriverManager.getConnection(dbUrl, dbId, dbPw);
-
-        
-        String memSql = "SELECT mem_id, mem_name, hourly_wage FROM tb_member WHERE store_id = ?";
-        pstmt = conn.prepareStatement(memSql);
-        pstmt.setString(1, storeId);
-        rs = pstmt.executeQuery();
-
-        ArrayList<Map<String, String>> members = new ArrayList<>();
-        while(rs.next()) {
-            Map<String, String> m = new HashMap<>();
-            m.put("id", rs.getString("mem_id"));
-            m.put("name", rs.getString("mem_name"));
-            m.put("wage", rs.getString("hourly_wage"));
-            members.add(m);
-        }
-        rs.close(); pstmt.close();
-
-        
-        for(Map<String, String> member : members) {
-            String memId = member.get("id");
-            String name = member.get("name");
-            int wage = 9860;
-            try { wage = Integer.parseInt(member.get("wage")); } catch(Exception e){}
-
-            String attSql = "SELECT att_type, att_time FROM tb_attendance " +
-                            "WHERE mem_id = ? AND store_id = ? " +
-                            "AND att_time >= ? AND att_time < ? " +
-                            "ORDER BY att_time ASC";
-            
-            pstmt = conn.prepareStatement(attSql);
-            pstmt.setString(1, memId);
-            pstmt.setString(2, storeId);
-            pstmt.setString(3, startDate);
-            pstmt.setString(4, endDate);
-            rs = pstmt.executeQuery();
-
-            long totalMin = 0;
-            java.util.Date lastIn = null;
-
-            while(rs.next()) {
-                String type = rs.getString("att_type");
-                Timestamp ts = rs.getTimestamp("att_time");
-                java.util.Date curTime = new java.util.Date(ts.getTime());
-
-                if("출근".equals(type)) {
-                    lastIn = curTime;
-                } else if("퇴근".equals(type) && lastIn != null) {
-                    long diff = curTime.getTime() - lastIn.getTime();
-                    totalMin += (diff / (1000 * 60)); 
-                    lastIn = null;
-                }
-            }
-            rs.close(); pstmt.close();
-
-            if(totalMin > 0) {
-                long totalPay = (long)((totalMin / 60.0) * wage);
-%>
+        <% if (rows.isEmpty()) { %>
+            <tr><td colspan="5" class="center">데이터가 없습니다.</td></tr>
+        <% } else {
+            int grandTotal = 0;
+            for (String[] r : rows) {
+                int pay = Integer.parseInt(r[4].replace(",","").replace("원","").trim());
+                grandTotal += pay;
+        %>
             <tr>
-                <td><%=name%> (<%=memId%>)</td>
-                <td><%=totalMin/60%>시간 <%=totalMin%60%>분</td>
-                <td><%=String.format("%,d", wage)%></td>
-                <td class="money"><%=String.format("%,d", totalPay)%>원</td>
+                <td><%=r[0]%></td>
+                <td class="center"><%=r[1]%></td>
+                <td class="center"><%=r[2]%></td>
+                <td class="money"><%=r[3]%>원</td>
+                <td class="money"><b><%=r[4]%>원</b></td>
             </tr>
-<%
-            }
-        }
-
-    } catch(Exception e) {
-        e.printStackTrace();
-%>
-        <tr><td colspan="4">에러 발생: <%=e.getMessage()%></td></tr>
-<%
-    } finally {
-        if(rs!=null) try{ rs.close(); } catch(Exception e){}
-        if(pstmt!=null) try{ pstmt.close(); } catch(Exception e){}
-        if(conn!=null) try{ conn.close(); } catch(Exception e){}
-    }
-%>
+        <% } %>
+            <tr>
+                <td colspan="4" style="text-align:right; font-weight:bold; background:#f8f9fc;">합계</td>
+                <td class="money" style="font-weight:bold; background:#f8f9fc; color:#4e73df;"><%=String.format("%,d", grandTotal)%>원</td>
+            </tr>
+        <% } %>
         </tbody>
     </table>
 </body>

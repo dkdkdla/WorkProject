@@ -1,0 +1,185 @@
+package work.member;
+
+import java.io.IOException;
+import java.time.*;
+import java.time.temporal.WeekFields;
+import java.util.*;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.*;
+import work.dao.AttendanceDAO;
+import work.dao.MemberDAO;
+import work.dto.AttendanceDTO;
+import work.dto.MemberDTO;
+import work.util.PayCalcUtil;
+
+@WebServlet("/MyAttendance")
+public class MyAttendance extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        HttpSession session = request.getSession();
+        String userId  = (String) session.getAttribute("userId");
+        String storeId = (String) session.getAttribute("userStoreId");
+
+        if (userId == null) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
+
+        // 1. 기간 설정
+        String searchMonth = request.getParameter("searchMonth");
+        String startDate   = request.getParameter("startDate");
+        String endDate     = request.getParameter("endDate");
+        String periodType  = request.getParameter("periodType"); // "month" or "custom"
+
+        LocalDate today = LocalDate.now();
+
+        if (startDate != null && !startDate.isEmpty() && endDate != null && !endDate.isEmpty()) {
+            periodType = "custom";
+            // searchMonth는 표시용으로만 사용
+            searchMonth = startDate.substring(0, 7);
+        } else {
+            periodType = "month";
+            if (searchMonth == null || searchMonth.isEmpty())
+                searchMonth = today.toString().substring(0, 7);
+            startDate = searchMonth + "-01";
+            LocalDate lastDay = LocalDate.parse(searchMonth + "-01").withDayOfMonth(
+                LocalDate.parse(searchMonth + "-01").lengthOfMonth());
+            endDate = lastDay.toString();
+        }
+
+        // 2. 데이터 조회
+        MemberDAO memDao = new MemberDAO();
+        MemberDTO myInfo = memDao.getMember(userId);
+        int hourlyWage = (myInfo != null) ? myInfo.getHourlyWage() : 0;
+
+        AttendanceDAO attDao = new AttendanceDAO();
+        ArrayList<AttendanceDTO> list = attDao.getMyAttendanceByRange(userId, startDate, endDate);
+
+        // 3. PayCalcUtil 기반 급여 계산
+        long   totalMinutes    = 0;
+        int    totalPay        = 0;
+        double recognizedHours = 0;
+        Map<String, Long>         weeklyMap  = new LinkedHashMap<>();
+        Map<String, AttendanceDTO> lastInMap = new HashMap<>();
+
+        ArrayList<AttendanceDTO> calcList = new ArrayList<>(list);
+        Collections.reverse(calcList); // 오래된 순으로 처리
+
+        for (AttendanceDTO dto : calcList) {
+            String storeKey = dto.getStoreName(); // store 구분 키
+            try {
+                String attType = dto.getAttType();
+                if ("출근".equals(attType) || "IN".equals(attType)) {
+                    lastInMap.put(storeKey, dto);
+                } else if ("퇴근".equals(attType) || "OUT".equals(attType)) {
+                    AttendanceDTO inDto = lastInMap.get(storeKey);
+                    if (inDto != null) {
+                        String inStr  = inDto.getAttTime();  // "yyyy-MM-dd HH:mm"
+                        String outStr = dto.getAttTime();
+
+                        LocalDate  workDate  = LocalDate.parse(inStr.substring(0, 10));
+                        LocalTime  startTime = LocalTime.parse(inStr.substring(11, 16));
+                        LocalTime  endTime   = LocalTime.parse(outStr.substring(11, 16));
+                        int        rid       = inDto.getRoleId();
+                        String     wType     = inDto.getWorkType();
+
+                        // PayCalcUtil로 정확한 급여 계산
+                        int pay = PayCalcUtil.calcPay(rid, workDate, startTime, endTime, wType);
+                        totalPay += pay;
+
+                        // 근무 분 누적
+                        long diffMin = Duration.between(startTime, endTime).toMinutes();
+                        if (diffMin < 0) diffMin += 24 * 60;
+                        totalMinutes += diffMin;
+
+                        // 주휴수당용 주간 근무 분
+                        String weekKey = workDate.getYear() + "-W" +
+                            workDate.get(java.time.temporal.WeekFields.ISO.weekOfWeekBasedYear());
+                        weeklyMap.put(weekKey, weeklyMap.getOrDefault(weekKey, 0L) + diffMin);
+
+                        lastInMap.remove(storeKey);
+                    }
+                }
+            } catch (Exception e) {}
+        }
+
+        recognizedHours = Math.round(totalMinutes / 60.0 * 10) / 10.0; // 소수점 1자리
+
+        // 매장 주휴수당 설정 확인
+        boolean myStoreUseHoliday = true;
+        try (java.sql.Connection hc = work.util.DBConn.getConnection();
+             java.sql.PreparedStatement hp = hc.prepareStatement(
+                 "SELECT use_holiday_pay FROM tb_store WHERE store_id=?")) {
+            hp.setString(1, storeId != null ? storeId : "");
+            java.sql.ResultSet hr = hp.executeQuery();
+            if (hr.next()) myStoreUseHoliday = hr.getBoolean("use_holiday_pay");
+        } catch (Exception ex) {}
+
+        int holidayPay = 0;
+        if (myStoreUseHoliday) for (long weekMin : weeklyMap.values()) {
+            if (weekMin >= 900) { // 900분 = 15시간
+                double weekHours = Math.min(weekMin / 60.0, 40);
+                holidayPay += (int)((weekHours / 40.0) * 8 * hourlyWage);
+            }
+        }
+
+        int estimatedSalary = totalPay + holidayPay;
+
+        // salaryDetail 상세 계산 (명세서용)
+        java.util.Map<String,Object> salaryDetail = new java.util.LinkedHashMap<>();
+        if (totalPay > 0 || holidayPay > 0) {
+            long wddMin=0,wdnMin=0,hddMin=0,hdnMin=0;
+            int  wddWage=0,wdnWage=0,hddWage=0,hdnWage=0;
+            int  wddPay=0,wdnPay=0,hddPay=0,hdnPay=0;
+            java.util.Set<String> wdSet = new java.util.HashSet<>();
+            java.util.Map<String,work.dto.AttendanceDTO> lim2 = new java.util.HashMap<>();
+            java.util.ArrayList<work.dto.AttendanceDTO> cl2 = new java.util.ArrayList<>(list);
+            java.util.Collections.reverse(cl2);
+            for (work.dto.AttendanceDTO dto : cl2) {
+                String key = dto.getStoreName();
+                String t = dto.getAttType();
+                if ("출근".equals(t)||"IN".equals(t)) { lim2.put(key, dto); }
+                else if ("퇴근".equals(t)||"OUT".equals(t)) {
+                    work.dto.AttendanceDTO inDto = lim2.get(key);
+                    if (inDto != null) {
+                        try {
+                            LocalDate wd = LocalDate.parse(inDto.getAttTime().substring(0,10));
+                            LocalTime st = LocalTime.parse(inDto.getAttTime().substring(11,16));
+                            LocalTime et = LocalTime.parse(dto.getAttTime().substring(11,16));
+                            long[] d = work.util.PayCalcUtil.calcPayDetail(inDto.getRoleId(), wd, st, et, inDto.getWorkType());
+                            wddMin+=d[0]; wdnMin+=d[1]; hddMin+=d[2]; hdnMin+=d[3];
+                            if(d[4]>0) wddWage=(int)d[4]; if(d[5]>0) wdnWage=(int)d[5];
+                            if(d[6]>0) hddWage=(int)d[6]; if(d[7]>0) hdnWage=(int)d[7];
+                            wdSet.add(wd.toString());
+                            lim2.remove(key);
+                        } catch(Exception e){}
+                    }
+                }
+            }
+            wddPay=(int)(wddMin/60.0*wddWage); wdnPay=(int)(wdnMin/60.0*wdnWage);
+            hddPay=(int)(hddMin/60.0*hddWage); hdnPay=(int)(hdnMin/60.0*hdnWage);
+            int bp2 = wddPay+wdnPay+hddPay+hdnPay;
+            salaryDetail.put("workDays",(int)wdSet.size()); salaryDetail.put("totalMin",totalMinutes);
+            salaryDetail.put("wddMin",wddMin); salaryDetail.put("wddWage",wddWage); salaryDetail.put("wddPay",wddPay);
+            salaryDetail.put("wdnMin",wdnMin); salaryDetail.put("wdnWage",wdnWage); salaryDetail.put("wdnPay",wdnPay);
+            salaryDetail.put("hddMin",hddMin); salaryDetail.put("hddWage",hddWage); salaryDetail.put("hddPay",hddPay);
+            salaryDetail.put("hdnMin",hdnMin); salaryDetail.put("hdnWage",hdnWage); salaryDetail.put("hdnPay",hdnPay);
+            salaryDetail.put("basePay",bp2); salaryDetail.put("holidayPay",(int)holidayPay);
+            salaryDetail.put("totalPay",bp2+(int)holidayPay);
+        }
+
+        // 4. JSP 전달
+        request.setAttribute("searchMonth",     searchMonth);
+        request.setAttribute("startDate",       startDate);
+        request.setAttribute("endDate",         endDate);
+        request.setAttribute("periodType",      periodType);
+        request.setAttribute("hourlyWage",       hourlyWage);
+        request.setAttribute("attendanceList",   list);
+        request.setAttribute("recognizedHours",  recognizedHours);
+        request.setAttribute("estimatedSalary",  estimatedSalary);
+        request.setAttribute("holidayPay",       holidayPay);
+        request.setAttribute("salaryDetail",     salaryDetail);
+
+        request.getRequestDispatcher("my_attendance.jsp").forward(request, response);
+    }
+}

@@ -1,0 +1,122 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="work.dao.MemberDAO, java.util.ArrayList" %>
+<%
+    // 1. 세션 변수 안전하게 가져오기
+    String navUserId = (String)session.getAttribute("userId");
+    String navUserName = (String)session.getAttribute("userName");
+    String navUserRole = (String)session.getAttribute("userRole"); 
+    String navUserStoreId = (String)session.getAttribute("userStoreId"); 
+
+    // 2. 매장 목록 가져오기 (에러 방지를 위해 초기화)
+    ArrayList<String[]> myStoreList = new ArrayList<>();
+    
+    // 로그인 상태일 때만 DB 조회
+    if (navUserId != null) {
+        try {
+            MemberDAO navDao = new MemberDAO();
+            myStoreList = navDao.getMyStoreList(navUserId);
+        } catch (Exception e) {
+            System.err.println("Navbar Store List Error: " + e.getMessage());
+        }
+    }
+%>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm fixed-top">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center" href="<%=request.getContextPath()%>/default.jsp">
+            <img src="<%=request.getContextPath()%>/Emblem.png" alt="AlbaPass 로고" style="height: 36px; object-fit: contain;">
+        </a>
+        
+        <div class="d-flex align-items-center">
+            <% if(navUserId == null) { %>
+                <a href="login.jsp" class="btn btn-outline-light btn-sm me-2">로그인</a>
+                <a href="register.jsp" class="btn btn-primary btn-sm">회원가입</a>
+            <% } else { %>
+                <div class="text-white me-3 d-none d-md-block small">
+                    <span class="badge <%
+                        if ("SA".equals(navUserRole)) { %>bg-danger<%
+                        } else if ("A".equals(navUserRole)) { %>bg-primary<%
+                        } else { %>bg-warning text-dark<% } %> me-1">
+                        <% if ("SA".equals(navUserRole)) { %>전체관리자<%
+                        } else if ("A".equals(navUserRole)) { %>점장<%
+                        } else { %>직원<% } %>
+                    </span>
+                    <strong><%=navUserName%></strong>님
+                </div>
+
+                <% if (!"SA".equals(navUserRole)) { %>
+                <% if (navUserStoreId != null && !navUserStoreId.isEmpty()) { %>
+                <span class="text-white-50 small me-2 d-none d-md-block">
+                    <i class="fa-solid fa-store me-1"></i><%=navUserStoreId%>
+                </span>
+                <% } %>
+                <button class="btn btn-sm btn-outline-light me-2" data-bs-toggle="modal" data-bs-target="#changeStoreModal">
+                    <i class="fa-solid fa-rotate"></i> 매장변경
+                </button>
+                <% } %>
+
+                <form action="<%=request.getContextPath()%>/Logout" method="post" class="m-0">
+                    <button type="submit" class="btn btn-danger btn-sm">로그아웃</button>
+                </form>
+            <% } %>
+        </div>
+    </div>
+</nav>
+
+<div class="modal fade" id="changeStoreModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title fw-bold">접속 매장 선택</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="list-group list-group-flush">
+                    <% if(myStoreList == null || myStoreList.isEmpty()) { %>
+                        <div class="p-4 text-center">
+                            <p class="text-muted small mb-2">등록된 매장이 없습니다.</p>
+                            <a href="MyPage" class="btn btn-sm btn-primary">매장 등록하기</a>
+                        </div>
+                    <% } else { 
+                        for(String[] s : myStoreList) { 
+                            boolean isCurrent = s[0].equals(navUserStoreId);
+                    %>
+                        <button type="button" onclick="changeStore('<%=s[0]%>')" 
+                                class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 <%= isCurrent ? "bg-light fw-bold" : "" %>">
+                            <span><%=s[1]%> <small class="text-muted">(<%=s[0]%>)</small></span>
+                            <% if(isCurrent) { %><i class="fa-solid fa-check text-primary"></i><% } %>
+                        </button>
+                    <% } } %>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <a href="StoreManage" class="btn btn-link btn-sm text-decoration-none text-muted mx-auto">매장 추가/삭제 관리</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function changeStore(storeId) {
+    if(!storeId) return;
+    fetch('ChangeStore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'storeId=' + encodeURIComponent(storeId)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.status === 'success') {
+            showToast(data.message, data.status === 'success' ? 'success' : 'danger');
+            location.reload(); 
+        } else {
+            showToast(data.message, data.status === 'success' ? 'success' : 'danger');
+        }
+    })
+    .catch(err => console.error('Error:', err));
+}
+</script>
+
+<style>
+    body { padding-top: 70px; }
+    .list-group-item-action:active { background-color: #f8f9fc; color: inherit; }
+</style>

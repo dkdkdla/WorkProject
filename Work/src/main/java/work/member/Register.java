@@ -129,7 +129,11 @@ public class Register extends HttpServlet {
             if ("A".equals(role)) {
                 out.print("{\"status\":\"success\", \"message\":\"가입 신청이 완료되었습니다! 전체관리자 승인 후 로그인 가능합니다.\"}");
             } else {
-                out.print("{\"status\":\"success\", \"message\":\"회원가입이 완료되었습니다!\"}");
+                boolean hasStore = (storeIds != null && !storeIds.trim().isEmpty());
+                String msg = hasStore
+                    ? "회원가입이 완료되었습니다! 소속 매장은 점장 승인 후 활성화됩니다."
+                    : "회원가입이 완료되었습니다!";
+                out.print("{\"status\":\"success\", \"message\":\"" + msg + "\"}");
             }
         } else {
             out.print("{\"status\":\"fail\", \"message\":\"가입 처리 중 오류가 발생했습니다. DB 정보를 확인하세요.\"}");

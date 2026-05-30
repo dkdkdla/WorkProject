@@ -32,6 +32,20 @@ public class Attendance extends HttpServlet {
         String attType = type.equalsIgnoreCase("in") ? "IN" : "OUT";
 
         try {
+            // ── 소속 승인 여부 확인 (ACTIVE만 허용)
+            String checkSql = "SELECT COUNT(*) FROM tb_my_stores " +
+                               "WHERE mem_id = ? AND store_id = ? AND join_status = 'ACTIVE'";
+            try (Connection conn = DBConn.getConnection();
+                 PreparedStatement ps = conn.prepareStatement(checkSql)) {
+                ps.setString(1, userId);
+                ps.setString(2, storeId);
+                ResultSet rs = ps.executeQuery();
+                if (!rs.next() || rs.getInt(1) == 0) {
+                    out.print("{\"status\":\"fail\", \"message\":\"해당 매장 소속 승인이 완료되지 않았습니다.\nQR 인증은 점장 승인 후 이용 가능합니다.\"}");
+                    return;
+                }
+            }
+
             // 출근 시 tb_my_stores에서 role_id 조회
             Integer roleId = null;
             if ("IN".equals(attType)) {

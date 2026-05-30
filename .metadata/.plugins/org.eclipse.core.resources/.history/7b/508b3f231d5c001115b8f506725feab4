@@ -1,0 +1,190 @@
+package work.admin;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.*;
+import work.dao.AttendanceDAO;
+import work.util.DBConn;
+import java.sql.*;
+import work.dto.AttendanceDTO;
+import work.dao.MemberDAO;
+import work.dto.MemberDTO;
+import work.util.PayCalcUtil;
+
+@WebServlet("/AdminHistory")
+public class AdminHistory extends HttpServlet {
+    private static final long serialVersionUID = 1L;
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setContentType("text/html; charset=UTF-8");
+        response.setCharacterEncoding("UTF-8");
+
+        HttpSession session = request.getSession();
+        String userId  = (String) session.getAttribute("userId");
+        String storeId = (String) session.getAttribute("userStoreId");
+
+        // 매장 선택 파라미터 처리 (좌측 매장 목록 클릭 시)
+        String selectedStoreId = request.getParameter("storeId");
+        if (selectedStoreId != null && !selectedStoreId.isEmpty()) {
+            storeId = selectedStoreId;
+            session.setAttribute("userStoreId", selectedStoreId);
+        }
+
+        // 날짜 기본값: 이번 달 1일 ~ 오늘
+        String startDate   = request.getParameter("startDate");
+        String endDate     = request.getParameter("endDate");
+        String searchMemId = request.getParameter("searchMemId");
+        String attFilter   = request.getParameter("attFilter");
+        if (searchMemId == null) searchMemId = "";
+        if (attFilter == null)   attFilter = "";
+
+        java.time.LocalDate today = java.time.LocalDate.now();
+        if (startDate == null || startDate.isEmpty())
+            startDate = today.withDayOfMonth(1).toString();
+        if (endDate == null || endDate.isEmpty())
+            endDate = today.toString();
+
+        try {
+            MemberDAO memDao = new MemberDAO();
+
+            // 점장의 매장 목록 (좌측 사이드바용)
+            ArrayList<String[]> myStores = getMyStores(userId);
+
+            AttendanceDAO attDao = new AttendanceDAO();
+            ArrayList<AttendanceDTO> fullList = attDao.getAttendanceByRange(storeId, startDate, endDate, searchMemId, attFilter);
+            ArrayList<MemberDTO>     memberList = memDao.getStoreMembers(storeId);
+
+            String isApp = request.getParameter("isApp");
+            if ("true".equals(isApp)) {
+                response.setContentType("application/json; charset=UTF-8");
+                PrintWriter out = response.getWriter();
+                StringBuilder sb = new StringBuilder();
+                sb.append("{\"status\":\"success\", \"data\":[");
+                if (fullList != null) {
+                    for (int i = 0; i < fullList.size(); i++) {
+                        AttendanceDTO dto = fullList.get(i);
+                        sb.append("{\"idx\":\"").append(dto.getIdx()).append("\",")
+                          .append("\"mem_id\":\"").append(dto.getMemberId()).append("\",")
+                          .append("\"name\":\"").append(dto.getStoreName()).append("\",")
+                          .append("\"type\":\"").append(dto.getAttType()).append("\",")
+                          .append("\"time\":\"").append(dto.getAttTime()).append("\"}");
+                        if (i < fullList.size() - 1) sb.append(",");
+                    }
+                }
+                sb.append("]}");
+                out.print(sb.toString());
+            } else {
+                // 급여 명세 상세 계산 (직원 선택 시)
+                java.util.Map<String, Object> salaryDetail = new java.util.LinkedHashMap<>();
+                if (searchMemId != null && !searchMemId.isEmpty() && fullList != null) {
+                    long wddMin=0, wdnMin=0, hddMin=0, hdnMin=0;
+                    int  wddWage=0, wdnWage=0, hddWage=0, hdnWage=0;
+                    long totalMin=0; int workDays=0; double holidayPay=0; int hourlyWage=0;
+                    java.util.Set<String> workDaySet = new java.util.HashSet<>();
+                    java.util.Map<String,Long> weeklyMap = new java.util.LinkedHashMap<>();
+                    java.util.Map<String,work.dto.AttendanceDTO> lastInMap = new java.util.HashMap<>();
+                    java.util.ArrayList<work.dto.AttendanceDTO> calcList = new java.util.ArrayList<>(fullList);
+                    java.util.Collections.reverse(calcList);
+
+                    for (MemberDTO m : memberList) {
+                        if (m.getId().equals(searchMemId)) { hourlyWage = m.getHourlyWage(); break; }
+                    }
+                    // 매장 급여 설정 로드
+                    boolean storeUseNight = true, storeUseWeekend = true, storeUseHoliday = true;
+                    try (java.sql.Connection sc = work.util.DBConn.getConnection();
+                         java.sql.PreparedStatement sp = sc.prepareStatement(
+                             "SELECT use_night_pay, use_weekend_pay, use_holiday_pay FROM tb_store WHERE store_id=?")) {
+                        sp.setString(1, storeId);
+                        java.sql.ResultSet sr = sp.executeQuery();
+                        if (sr.next()) {
+                            storeUseNight   = sr.getBoolean("use_night_pay");
+                            storeUseWeekend = sr.getBoolean("use_weekend_pay");
+                            storeUseHoliday = sr.getBoolean("use_holiday_pay");
+                        }
+                    } catch (Exception ex) {}
+                    for (work.dto.AttendanceDTO dto : calcList) {
+                        String key = dto.getStoreName();
+                        String type = dto.getAttType();
+                        if ("출근".equals(type)||"IN".equals(type)) {
+                            lastInMap.put(key, dto);
+                        } else if ("퇴근".equals(type)||"OUT".equals(type)) {
+                            work.dto.AttendanceDTO inDto = lastInMap.get(key);
+                            if (inDto != null) {
+                                try {
+                                    java.time.LocalDate wd = java.time.LocalDate.parse(inDto.getAttTime().substring(0,10));
+                                    java.time.LocalTime st = java.time.LocalTime.parse(inDto.getAttTime().substring(11,16));
+                                    java.time.LocalTime et = java.time.LocalTime.parse(dto.getAttTime().substring(11,16));
+                                    long[] d = PayCalcUtil.calcPayDetail(inDto.getRoleId(), wd, st, et, inDto.getWorkType());
+                                    wddMin+=d[0]; wdnMin+=d[1]; hddMin+=d[2]; hdnMin+=d[3];
+                                    if (d[4]>0) wddWage=(int)d[4];
+                                    if (d[5]>0) wdnWage=(int)d[5];
+                                    if (d[6]>0) hddWage=(int)d[6];
+                                    if (d[7]>0) hdnWage=(int)d[7];
+                                    long diff = java.time.Duration.between(st,et).toMinutes();
+                                    if (diff<0) diff+=1440;
+                                    totalMin+=diff;
+                                    workDaySet.add(wd.toString());
+                                    String wk = wd.getYear()+"-W"+wd.get(java.time.temporal.WeekFields.ISO.weekOfWeekBasedYear());
+                                    weeklyMap.put(wk, weeklyMap.getOrDefault(wk,0L)+diff);
+                                    lastInMap.remove(key);
+                                } catch(Exception e){}
+                            }
+                        }
+                    }
+                    if (storeUseHoliday) {
+                        for (long wm : weeklyMap.values()) {
+                            if (wm>=900) holidayPay += (Math.min(wm/60.0,40)/40.0)*8*hourlyWage;
+                        }
+                    }
+                    int wddPay=(int)(wddMin/60.0*wddWage), wdnPay=(int)(wdnMin/60.0*wdnWage);
+                    int hddPay=(int)(hddMin/60.0*hddWage), hdnPay=(int)(hdnMin/60.0*hdnWage);
+                    int basePay = wddPay+wdnPay+hddPay+hdnPay;
+
+                    salaryDetail.put("workDays",   workDaySet.size());
+                    salaryDetail.put("totalMin",   totalMin);
+                    salaryDetail.put("wddMin",     wddMin);   salaryDetail.put("wddWage", wddWage); salaryDetail.put("wddPay", wddPay);
+                    salaryDetail.put("wdnMin",     wdnMin);   salaryDetail.put("wdnWage", wdnWage); salaryDetail.put("wdnPay", wdnPay);
+                    salaryDetail.put("hddMin",     hddMin);   salaryDetail.put("hddWage", hddWage); salaryDetail.put("hddPay", hddPay);
+                    salaryDetail.put("hdnMin",     hdnMin);   salaryDetail.put("hdnWage", hdnWage); salaryDetail.put("hdnPay", hdnPay);
+                    salaryDetail.put("basePay",    basePay);
+                    salaryDetail.put("holidayPay", (int)holidayPay);
+                    salaryDetail.put("totalPay",   basePay+(int)holidayPay);
+                }
+
+                request.setAttribute("fullList",      fullList);
+                request.setAttribute("memberList",    memberList);
+                request.setAttribute("myStores",      myStores);
+                request.setAttribute("currentStoreId", storeId);
+                request.setAttribute("startDate",     startDate);
+                request.setAttribute("endDate",       endDate);
+                request.setAttribute("searchMemId",   searchMemId);
+                request.setAttribute("salaryDetail",  salaryDetail);
+                request.setAttribute("attFilter",   attFilter);
+                request.getRequestDispatcher("admin_attendance.jsp").forward(request, response);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private ArrayList<String[]> getMyStores(String userId) {
+        ArrayList<String[]> list = new ArrayList<>();
+        String sql = "SELECT s.store_id, s.store_name " +
+                     "FROM tb_store s " +
+                     "JOIN tb_my_stores m ON s.store_id = m.store_id " +
+                     "WHERE m.mem_id = ? AND m.join_status = 'ACTIVE' AND s.store_status = 'ACTIVE' " +
+                     "ORDER BY s.store_name ASC";
+        try (java.sql.Connection conn = work.util.DBConn.getConnection();
+             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, userId);
+            try (java.sql.ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next())
+                    list.add(new String[]{rs.getString("store_id"), rs.getString("store_name")});
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
+    }
+}

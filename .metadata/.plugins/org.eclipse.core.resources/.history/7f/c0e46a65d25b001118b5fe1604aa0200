@@ -1,0 +1,112 @@
+package work.member;
+
+import java.io.IOException;
+import java.time.*;
+import java.util.*;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.*;
+import work.dao.AttendanceDAO;
+import work.dao.MemberDAO;
+import work.dto.AttendanceDTO;
+import work.dto.MemberDTO;
+import work.util.PayCalcUtil;
+
+@WebServlet("/MyAttendance")
+public class MyAttendance extends HttpServlet {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        HttpSession session = request.getSession();
+        String userId  = (String) session.getAttribute("userId");
+        String storeId = (String) session.getAttribute("userStoreId");
+
+        if (userId == null) {
+            response.sendRedirect("login.jsp");
+            return;
+        }
+
+        // 1. 기간 설정
+        String searchMonth = request.getParameter("searchMonth");
+        if (searchMonth == null || searchMonth.isEmpty()) {
+            searchMonth = LocalDate.now().toString().substring(0, 7); // yyyy-MM
+        }
+
+        // 2. 데이터 조회
+        MemberDAO memDao = new MemberDAO();
+        MemberDTO myInfo = memDao.getMember(userId);
+        int hourlyWage = (myInfo != null) ? myInfo.getHourlyWage() : 0;
+
+        AttendanceDAO attDao = new AttendanceDAO();
+        ArrayList<AttendanceDTO> list = attDao.getMyAttendanceList(userId, searchMonth);
+
+        // 3. PayCalcUtil 기반 급여 계산
+        long   totalMinutes    = 0;
+        int    totalPay        = 0;
+        double recognizedHours = 0;
+        Map<String, Long>         weeklyMap  = new LinkedHashMap<>();
+        Map<String, AttendanceDTO> lastInMap = new HashMap<>();
+
+        ArrayList<AttendanceDTO> calcList = new ArrayList<>(list);
+        Collections.reverse(calcList); // 오래된 순으로 처리
+
+        for (AttendanceDTO dto : calcList) {
+            String storeKey = dto.getStoreName(); // store 구분 키
+            try {
+                String attType = dto.getAttType();
+                if ("출근".equals(attType) || "IN".equals(attType)) {
+                    lastInMap.put(storeKey, dto);
+                } else if ("퇴근".equals(attType) || "OUT".equals(attType)) {
+                    AttendanceDTO inDto = lastInMap.get(storeKey);
+                    if (inDto != null) {
+                        String inStr  = inDto.getAttTime();  // "yyyy-MM-dd HH:mm"
+                        String outStr = dto.getAttTime();
+
+                        LocalDate  workDate  = LocalDate.parse(inStr.substring(0, 10));
+                        LocalTime  startTime = LocalTime.parse(inStr.substring(11, 16));
+                        LocalTime  endTime   = LocalTime.parse(outStr.substring(11, 16));
+                        int        rid       = inDto.getRoleId();
+                        String     wType     = inDto.getWorkType();
+
+                        // PayCalcUtil로 정확한 급여 계산
+                        int pay = PayCalcUtil.calcPay(rid, workDate, startTime, endTime, wType);
+                        totalPay += pay;
+
+                        // 근무 분 누적
+                        long diffMin = Duration.between(startTime, endTime).toMinutes();
+                        if (diffMin < 0) diffMin += 24 * 60;
+                        totalMinutes += diffMin;
+
+                        // 주휴수당용 주간 근무 분
+                        String weekKey = workDate.getYear() + "-W" +
+                            workDate.get(java.time.temporal.WeekFields.ISO.weekOfWeekBasedYear());
+                        weeklyMap.put(weekKey, weeklyMap.getOrDefault(weekKey, 0L) + diffMin);
+
+                        lastInMap.remove(storeKey);
+                    }
+                }
+            } catch (Exception e) {}
+        }
+
+        recognizedHours = Math.round(totalMinutes / 60.0 * 10) / 10.0; // 소수점 1자리
+
+        // 주휴수당 (주 15시간 이상 시 적용)
+        int holidayPay = 0;
+        for (long weekMin : weeklyMap.values()) {
+            if (weekMin >= 900) { // 900분 = 15시간
+                double weekHours = Math.min(weekMin / 60.0, 40);
+                holidayPay += (int)((weekHours / 40.0) * 8 * hourlyWage);
+            }
+        }
+
+        int estimatedSalary = totalPay + holidayPay;
+
+        // 4. JSP 전달
+        request.setAttribute("searchMonth",     searchMonth);
+        request.setAttribute("hourlyWage",       hourlyWage);
+        request.setAttribute("attendanceList",   list);
+        request.setAttribute("recognizedHours",  recognizedHours);
+        request.setAttribute("estimatedSalary",  estimatedSalary);
+        request.setAttribute("holidayPay",       holidayPay);
+
+        request.getRequestDispatcher("my_attendance.jsp").forward(request, response);
+    }
+}

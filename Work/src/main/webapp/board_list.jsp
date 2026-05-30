@@ -11,7 +11,7 @@
     String storeId = request.getParameter("storeId");
     if (storeId == null || storeId.trim().isEmpty()) {
         storeId = (String)session.getAttribute("userStoreId");
-        if (storeId == null) storeId = "store1"; 
+        if (storeId == null) storeId = ""; 
     }
 %>
 

@@ -1,13 +1,23 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="java.util.ArrayList, work.dao.MemberDAO" %>
 <%
-    // 1. 보안 체크: 로그인 여부 및 매장 정보 가져오기
     String userId = (String)session.getAttribute("userId");
-    String userStoreId = (String)session.getAttribute("userStoreId"); // 🚨 세션에서 매장 ID 추출
+    String userStoreId = (String)session.getAttribute("userStoreId");
 
     if (userId == null) {
         response.sendRedirect("login.jsp");
         return;
     }
+
+    // 소속 매장 목록 조회
+    MemberDAO qrDao = new MemberDAO();
+    ArrayList<String[]> myStores = qrDao.getMyStoreList(userId);
+    // 매장이 1개면 자동 선택
+    if (myStores.size() == 1 && (userStoreId == null || userStoreId.isEmpty())) {
+        userStoreId = myStores.get(0)[0];
+        session.setAttribute("userStoreId", userStoreId);
+    }
+    boolean multiStore = myStores.size() > 1;
 %>
 <!DOCTYPE html>
 <html lang="ko">
@@ -61,24 +71,46 @@
             <p class="text-muted small">현재 접속한 매장 코드가 자동으로 입력되어 있습니다.</p>
         </div>
 
-        <div class="scanner-box p-5 mb-4">
-            <label class="form-label small fw-bold text-secondary mb-3">STORE CODE</label>
-            <input type="text" id="qrInput" 
-                   value="<%= (userStoreId != null) ? userStoreId : "" %>" 
-                   class="form-control qr-input mb-4" placeholder="CODE">
-            
-            <div class="d-grid gap-2">
-                <button onclick="processQr('IN')" class="btn btn-primary py-3 fw-bold">
-                    <i class="fa-solid fa-right-to-bracket me-2"></i>출근 처리하기
-                </button>
-                <button onclick="processQr('OUT')" class="btn btn-danger py-3 fw-bold">
-                    <i class="fa-solid fa-right-from-bracket me-2"></i>퇴근 처리하기
-                </button>
-            </div>
-        </div>
+        <div class="scanner-box p-4 mb-4">
+            <% if (myStores.isEmpty()) { %>
+                <div class="text-center text-muted py-3">
+                    <i class="fa-solid fa-store-slash fa-2x mb-2 d-block"></i>
+                    <p class="mb-0 small">소속된 매장이 없습니다.</p>
+                    <a href="StoreManage" class="btn btn-sm btn-primary mt-2">매장 신청하기</a>
+                </div>
+            <% } else { %>
+                <% if (multiStore) { %>
+                <%-- 다중 매장: 드롭다운 선택 --%>
+                <div class="mb-4">
+                    <label class="form-label small fw-bold text-secondary">근무 매장 선택</label>
+                    <select id="qrInput" class="form-select form-select-lg fw-bold text-primary text-center">
+                        <% for (String[] s : myStores) {
+                            boolean sel = s[0].equals(userStoreId); %>
+                        <option value="<%=s[0]%>" <%=sel?"selected":""%>><%=s[1]%> (<%=s[0]%>)</option>
+                        <% } %>
+                    </select>
+                </div>
+                <% } else { %>
+                <%-- 단일 매장: 자동 표시 --%>
+                <input type="hidden" id="qrInput" value="<%=userStoreId != null ? userStoreId : ""%>">
+                <div class="mb-4 p-3 bg-light rounded-3 text-center">
+                    <div class="small text-muted mb-1">근무 매장</div>
+                    <div class="fw-bold text-primary fs-5">
+                        <i class="fa-solid fa-store me-2"></i>
+                        <%=myStores.isEmpty() ? userStoreId : myStores.get(0)[1]%>
+                    </div>
+                </div>
+                <% } %>
 
-        <div class="alert alert-light border-0 py-2 small text-muted">
-            <i class="fa-solid fa-circle-info me-1"></i> 매장 코드가 다를 경우 직접 수정하여 인증할 수 있습니다.
+                <div class="d-grid gap-2">
+                    <button onclick="processQr('IN')" class="btn btn-primary py-3 fw-bold">
+                        <i class="fa-solid fa-right-to-bracket me-2"></i>출근 처리하기
+                    </button>
+                    <button onclick="processQr('OUT')" class="btn btn-danger py-3 fw-bold">
+                        <i class="fa-solid fa-right-from-bracket me-2"></i>퇴근 처리하기
+                    </button>
+                </div>
+            <% } %>
         </div>
         
         <a href="default.jsp" class="btn btn-link text-decoration-none text-muted mt-3">

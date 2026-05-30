@@ -21,6 +21,12 @@
 
     ArrayList<String[]> pendingList = (ArrayList<String[]>)request.getAttribute("pendingList");
     if (pendingList == null) pendingList = new ArrayList<>();
+    Boolean _night   = (Boolean)request.getAttribute("useNightPay");
+    Boolean _weekend = (Boolean)request.getAttribute("useWeekendPay");
+    Boolean _holiday = (Boolean)request.getAttribute("useHolidayPay");
+    boolean useNightPay   = _night   != null ? _night   : true;
+    boolean useWeekendPay = _weekend != null ? _weekend : true;
+    boolean useHolidayPay = _holiday != null ? _holiday : true;
 %>
 <!DOCTYPE html>
 <html lang="ko">
@@ -46,10 +52,6 @@
         .member-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }
         .wage-badge { background: #f0f4ff; color: #4e73df; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
         .empty-state { min-height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .day-dot { width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center;
-                   font-size:11px; font-weight:700; border:1.5px solid #dee2e6; color:#adb5bd; background:#fff; }
-        .day-dot.active { background:#4e73df; border-color:#4e73df; color:#fff; }
-        .work-time-cell { line-height:1.4; }
     </style>
 </head>
 <body>
@@ -57,6 +59,27 @@
 <%@ include file="navbar.jsp" %>
 
 <div class="container-fluid mt-4 mb-5 px-4">
+
+    <%-- 소속 신청 대기 배너 --%>
+    <% if (!pendingList.isEmpty()) { %>
+    <div class="alert border-0 shadow-sm d-flex align-items-center justify-content-between px-4 py-3 mb-3"
+        style="background:linear-gradient(135deg,#e74a3b,#c0392b); border-radius:12px; cursor:pointer;"
+        onclick="document.getElementById('pendingSection').scrollIntoView({behavior:'smooth'})">
+        <div class="d-flex align-items-center gap-3 text-white">
+            <div class="position-relative">
+                <i class="fa-solid fa-bell fa-lg"></i>
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark"
+                    style="font-size:11px;"><%=pendingList.size()%></span>
+            </div>
+            <div>
+                <div class="fw-bold">소속 신청 대기 <%=pendingList.size()%>건</div>
+                <div class="small opacity-75">클릭하면 대기 목록으로 이동합니다</div>
+            </div>
+        </div>
+        <i class="fa-solid fa-chevron-down text-white opacity-75"></i>
+    </div>
+    <% } %>
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="fw-bold text-dark mb-0">
             <i class="fa-solid fa-store me-2 text-primary"></i>매장 · 직원 관리
@@ -223,20 +246,15 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <%
-                                        String[] allDots = {"월","화","수","목","금","토","일"};
-                                        String wdStr = m.getWorkDays() != null ? m.getWorkDays() : "";
-                                        java.util.List<String> wdList = java.util.Arrays.asList(wdStr.split(","));
-                                    %>
-                                    <div class="d-flex gap-1 flex-wrap">
-                                    <% for(String dot : allDots) {
-                                        boolean active = wdList.contains(dot.trim());
-                                    %>
-                                        <span class="day-dot <%=active ? "active" : ""%>"><%=dot%></span>
-                                    <% } %>
-                                    </div>
+                                    <%if (m.getWorkDays() != null && !m.getWorkDays().isEmpty()) {
+                                        for (String day : m.getWorkDays().split(",")) {%>
+                                            <span class="badge bg-primary me-1"><%=day.trim()%></span>
+                                    <%  }
+                                    } else {%>
+                                        <span class="text-muted small">미정</span>
+                                    <%}%>
                                 </td>
-                                <td style="min-width:150px;">
+                                <td style="min-width:160px;">
                                     <%
                                         String ws = m.getWorkStart() != null ? m.getWorkStart() : "";
                                         String we = m.getWorkEnd()   != null ? m.getWorkEnd()   : "";
@@ -285,7 +303,7 @@
                     <% } %>
 
                     <%-- 소속 신청 대기 섹션 --%>
-                    <div class="border-top px-4 py-3">
+                    <div class="border-top px-4 py-3" id="pendingSection">
                         <h6 class="fw-bold text-muted small text-uppercase mb-2">
                             <i class="fa-solid fa-clock me-1"></i>소속 신청 대기
                             <%if (!pendingList.isEmpty()) {%>
@@ -300,7 +318,7 @@
                             <div>
                                 <span class="fw-bold text-dark"><%=p[1]%></span>
                                 <small class="text-muted ms-2"><%=p[0]%></small>
-                                <small class="text-muted ms-1">(<%=p[4]%>)</small>
+                                <small class="text-muted ms-1"><%=p[4]%> <span class="text-secondary">(<%=p[3]%>)</span></small>
                             </div>
                             <div class="d-flex gap-2">
                                 <button class="btn btn-sm btn-success fw-bold px-3"
@@ -407,6 +425,7 @@
             </div>
             <div class="modal-body">
                 <p class="text-muted small mb-4">해당 매장에 적용할 수당 정책을 설정하세요.</p>
+                <input type="hidden" id="settingStoreId" value="<%=currentStoreId%>">
 
                 <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded-3 mb-3">
                     <div>
@@ -414,17 +433,19 @@
                         <small class="text-muted">22:00 ~ 06:00 근무 시 기본 시급 × 1.5 적용</small>
                     </div>
                     <div class="form-check form-switch mb-0">
-                        <input class="form-check-input" type="checkbox" id="useNightPay" style="width:48px; height:24px;">
+                        <input class="form-check-input" type="checkbox" id="useNightPay"
+                            <%=useNightPay ? "checked" : ""%> style="width:48px; height:24px;">
                     </div>
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded-3 mb-3">
                     <div>
-                        <div class="fw-bold text-dark">주말 수당</div>
-                        <small class="text-muted">토·일 근무 시 기본 시급 × 1.5 적용</small>
+                        <div class="fw-bold text-dark">휴일 수당</div>
+                        <small class="text-muted">휴일 근무 시 기본 시급 × 1.5 적용</small>
                     </div>
                     <div class="form-check form-switch mb-0">
-                        <input class="form-check-input" type="checkbox" id="useWeekendPay" style="width:48px; height:24px;">
+                        <input class="form-check-input" type="checkbox" id="useWeekendPay"
+                            <%=useWeekendPay ? "checked" : ""%> style="width:48px; height:24px;">
                     </div>
                 </div>
 
@@ -434,7 +455,8 @@
                         <small class="text-muted">주 15시간 이상 근무 시 적용 (5인 이상 사업장 의무)</small>
                     </div>
                     <div class="form-check form-switch mb-0">
-                        <input class="form-check-input" type="checkbox" id="useHolidayPay" style="width:48px; height:24px;">
+                        <input class="form-check-input" type="checkbox" id="useHolidayPay"
+                            <%=useHolidayPay ? "checked" : ""%> style="width:48px; height:24px;">
                     </div>
                 </div>
 
@@ -497,7 +519,6 @@ function selectStore(storeId, storeName) {
     if (item) item.classList.add('active');
     document.getElementById('selectedStoreName').innerHTML =
         '<i class="fa-solid fa-store me-2 text-primary"></i>' + storeName;
-    // TODO: 해당 매장 직원 목록 AJAX 로드
     location.href = 'StoreMemberManage?storeId=' + storeId;
 }
 
@@ -642,9 +663,21 @@ async function requestCreateStore() {
 }
 
 // 매장 설정 저장 (UI only - 주휴수당 기능은 추후 연결)
-function saveStoreSetting() {
-    showToast('설정이 저장되었습니다. (주휴수당 기능은 추후 업데이트 예정)', 'info');
-    bootstrap.Modal.getInstance(document.getElementById('storeSettingModal')).hide();
+async function saveStoreSetting() {
+    var params = new URLSearchParams();
+    params.append('action',       'saveStoreSetting');
+    params.append('storeId',      document.getElementById('settingStoreId').value);
+    params.append('useNightPay',  document.getElementById('useNightPay').checked);
+    params.append('useWeekendPay',document.getElementById('useWeekendPay').checked);
+    params.append('useHolidayPay',document.getElementById('useHolidayPay').checked);
+    try {
+        var res  = await fetch('StoreMemberManage', { method:'POST', body:params });
+        var data = await res.json();
+        showToast(data.message, data.status === 'success' ? 'success' : 'danger');
+        if (data.status === 'success') {
+            bootstrap.Modal.getInstance(document.getElementById('storeSettingModal')).hide();
+        }
+    } catch(e) { showToast('통신 오류가 발생했습니다.', 'danger'); }
 }
 
 // 근무 설정 모달 열기

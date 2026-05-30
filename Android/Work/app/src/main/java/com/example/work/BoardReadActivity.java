@@ -92,12 +92,16 @@ public class BoardReadActivity extends AppCompatActivity {
                 String status = json.optString("status");
 
                 if ("success".equals(status)) {
-                    String title = json.optString("title", "");
-                    String writer = json.optString("writer", "");
-                    String date = json.optString("date", "");
-                    String content = json.optString("content", "");
-                    String imgData = json.optString("imgData", "");
-                    String filename = json.optString("filename", "");
+                    // data 객체 안에 중첩된 구조
+                    JSONObject data = json.optJSONObject("data");
+                    if (data == null) data = json; // 혹시 flat 구조면 fallback
+                    String title   = data.optString("title", "");
+                    String writer  = data.optString("writer", "");
+                    String date    = data.optString("date", "");
+                    String content = data.optString("content", "");
+                    String imgData = data.optString("imgData", "");
+                    String filename = data.optString("fileName", // 서버는 fileName (camelCase)
+                            data.optString("filename", "")); // fallback
 
                     runOnUiThread(() -> {
                         tvTitle.setText(title);

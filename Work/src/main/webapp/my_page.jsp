@@ -43,7 +43,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="fw-bold text-dark mb-0"><i class="fa-solid fa-user-gear me-2 text-primary"></i>내 정보 수정</h3>
         <a href="default.jsp" class="btn btn-outline-secondary btn-sm fw-bold px-3">
-            <i class="fa-solid fa-arrow-left me-1"></i> 메인으로
+            <i class="fa-solid fa-arrow-left me-1"></i> 메인
         </a>
     </div>
 

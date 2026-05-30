@@ -1,79 +1,95 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="30dp"
-    android:gravity="center"
-    android:background="#E8EAF6">
-
-    <TextView
-        android:id="@+id/tvEditTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="기록 수정"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="#1A237E"
-        android:layout_marginBottom="30dp"/>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="기록 유형 (출근/퇴근)"
-        android:textColor="#555555"
-        android:layout_marginBottom="5dp"/>
-    <EditText
-        android:id="@+id/etEditType"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:background="@drawable/bg_button_navy"
-        android:backgroundTint="#FFFFFF"
-        android:paddingHorizontal="20dp"
-        android:layout_marginBottom="20dp"/>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="시간 (YYYY-MM-DD HH:MM:SS)"
-        android:textColor="#555555"
-        android:layout_marginBottom="5dp"/>
-    <EditText
-        android:id="@+id/etEditTime"
-        android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:background="@drawable/bg_button_navy"
-        android:backgroundTint="#FFFFFF"
-        android:paddingHorizontal="20dp"
-        android:layout_marginBottom="30dp"/>
+    android:background="@color/gray_bg">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
-
-        <Button
-            android:id="@+id/btnEditDelete"
-            android:layout_width="0dp"
-            android:layout_height="60dp"
-            android:layout_weight="1"
-            android:text="삭제"
-            android:textSize="18sp"
+        android:orientation="vertical"
+        android:background="@color/navy_primary"
+        android:padding="24dp"
+        android:paddingTop="48dp"
+        android:paddingBottom="24dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="AlbaPass" android:textSize="13sp" android:textStyle="bold"
+            android:textColor="@color/orange_accent" android:layout_marginBottom="4dp"/>
+        <TextView
+            android:id="@+id/tvEditTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="기록 수정"
+            android:textSize="22sp"
             android:textStyle="bold"
-            android:backgroundTint="#FF5252"
-            android:textColor="#FFFFFF"
-            android:layout_marginRight="10dp"/>
-
-        <Button
-            android:id="@+id/btnEditSave"
-            android:layout_width="0dp"
-            android:layout_height="60dp"
-            android:layout_weight="1"
-            android:text="저장 하기"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:backgroundTint="#1A237E"
             android:textColor="#FFFFFF"/>
     </LinearLayout>
 
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="4dp"
+        app:cardBackgroundColor="#FFFFFF">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="기록 유형 (출근/퇴근)" android:textSize="12sp"
+                android:textColor="#6c757d" android:textStyle="bold" android:layout_marginBottom="6dp"/>
+            <EditText
+                android:id="@+id/etEditType"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="#FFF0F4FF"
+                android:paddingHorizontal="14dp"
+                android:layout_marginBottom="16dp"/>
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="시간" android:textSize="12sp"
+                android:textColor="#6c757d" android:textStyle="bold" android:layout_marginBottom="6dp"/>
+            <EditText
+                android:id="@+id/etEditTime"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="#FFF0F4FF"
+                android:paddingHorizontal="14dp"
+                android:layout_marginBottom="24dp"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <Button
+                    android:id="@+id/btnEditDelete"
+                    android:layout_width="0dp"
+                    android:layout_height="52dp"
+                    android:layout_weight="1"
+                    android:text="삭제"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:backgroundTint="@color/danger"
+                    android:textColor="#FFFFFF"
+                    android:layout_marginEnd="8dp"
+                    app:cornerRadius="12dp"/>
+                <Button
+                    android:id="@+id/btnEditSave"
+                    android:layout_width="0dp"
+                    android:layout_height="52dp"
+                    android:layout_weight="1"
+                    android:text="저장"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:backgroundTint="@color/navy_primary"
+                    android:textColor="#FFFFFF"
+                    app:cornerRadius="12dp"/>
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
 </LinearLayout>
