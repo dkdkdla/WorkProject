@@ -1,0 +1,74 @@
+package work.api;
+
+import java.io.*;
+import java.sql.*;
+import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.*;
+import work.util.DBConn;
+
+@WebServlet("/MyAttendanceApi")
+public class MyAttendanceApi extends HttpServlet {
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.setContentType("application/json; charset=UTF-8");
+        response.setCharacterEncoding("UTF-8");
+        PrintWriter out = response.getWriter();
+
+        String userId  = request.getParameter("id");
+        String storeId = request.getParameter("storeId");
+        String startDate = request.getParameter("startDate");
+        String endDate   = request.getParameter("endDate");
+
+        if (userId == null || userId.isEmpty()) {
+            out.print("{\"status\":\"fail\",\"message\":\"userId 없음\"}");
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"status\":\"success\",\"data\":[");
+
+        String sql = "SELECT idx, mem_id, att_type, " +
+                     "FORMAT(att_time,'yyyy-MM-dd HH:mm') as att_time " +
+                     "FROM tb_attendance " +
+                     "WHERE mem_id = ? AND store_id = ? " +
+                     "AND (att_type IN ('IN','OUT','출근','퇴근')) ";
+
+        if (startDate != null && !startDate.isEmpty())
+            sql += "AND CAST(att_time AS DATE) >= ? ";
+        if (endDate != null && !endDate.isEmpty())
+            sql += "AND CAST(att_time AS DATE) <= ? ";
+        sql += "ORDER BY att_time DESC";
+
+        try (Connection conn = DBConn.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            int idx = 1;
+            ps.setString(idx++, userId);
+            ps.setString(idx++, storeId != null ? storeId : "");
+            if (startDate != null && !startDate.isEmpty()) ps.setString(idx++, startDate);
+            if (endDate   != null && !endDate.isEmpty())   ps.setString(idx++, endDate);
+
+            ResultSet rs = ps.executeQuery();
+            boolean first = true;
+            while (rs.next()) {
+                if (!first) sb.append(",");
+                sb.append("{");
+                sb.append("\"idx\":\"").append(rs.getString("idx")).append("\",");
+                sb.append("\"mem_id\":\"").append(rs.getString("mem_id")).append("\",");
+                sb.append("\"name\":\"").append(userId).append("\",");
+                sb.append("\"type\":\"").append(rs.getString("att_type")).append("\",");
+                sb.append("\"time\":\"").append(rs.getString("att_time")).append("\"");
+                sb.append("}");
+                first = false;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            out.print("{\"status\":\"error\",\"message\":\"" + e.getMessage() + "\"}");
+            return;
+        }
+
+        sb.append("]}");
+        out.print(sb.toString());
+    }
+}

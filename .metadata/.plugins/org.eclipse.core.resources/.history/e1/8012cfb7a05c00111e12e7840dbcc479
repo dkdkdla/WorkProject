@@ -21,9 +21,7 @@ public class GetSalaryInfo extends HttpServlet {
         // 세션 체크
         HttpSession session = request.getSession(false);
         String role = session != null ? (String)session.getAttribute("userRole") : null;
-        String _sid = request.getParameter("storeId");
-        if (_sid == null) _sid = "";
-        if (_sid.isEmpty() && (role == null || !"A".equals(role.trim()))) {
+        if (role == null || !"A".equals(role.trim())) {
             out.print("{\"status\":\"fail\", \"message\":\"권한이 없습니다.\"}");
             return;
         }

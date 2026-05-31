@@ -173,34 +173,7 @@ public class MyAttendance extends HttpServlet {
             salaryDetail.put("totalPay",bp2+(int)holidayPay);
         }
 
-     // 4. 안드로이드 앱 요청이면 JSON 응답
-        String isApp = request.getParameter("isApp");
-        if ("true".equals(isApp)) {
-            response.setContentType("application/json; charset=UTF-8");
-            StringBuilder jSb = new StringBuilder();
-            jSb.append("{\"status\":\"success\"");
-            jSb.append(",\"totalPay\":").append(estimatedSalary);
-            jSb.append(",\"holidayPay\":").append((int)holidayPay);
-            jSb.append(",\"wage\":").append(hourlyWage);
-            jSb.append(",\"data\":[");
-            boolean first = true;
-            for (AttendanceDTO dto : list) {
-                if (!first) jSb.append(",");
-                jSb.append("{");
-                jSb.append("\"idx\":\"").append(dto.getIdx()).append("\",");
-                jSb.append("\"mem_id\":\"").append(dto.getMemberId()).append("\",");
-                jSb.append("\"name\":\"").append(dto.getStoreName() != null ? dto.getStoreName() : "").append("\",");
-                jSb.append("\"type\":\"").append(dto.getAttType()).append("\",");
-                jSb.append("\"time\":\"").append(dto.getAttTime()).append("\"");
-                jSb.append("}");
-                first = false;
-            }
-            jSb.append("]}");
-            response.getWriter().print(jSb.toString());
-            return;
-        }
-
-        // 5. 웹 JSP 전달
+        // 4. JSP 전달
         request.setAttribute("searchMonth",     searchMonth);
         request.setAttribute("startDate",       startDate);
         request.setAttribute("endDate",         endDate);

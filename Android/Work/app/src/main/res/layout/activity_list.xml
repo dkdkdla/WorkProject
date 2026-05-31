@@ -6,40 +6,42 @@
     android:orientation="vertical"
     android:background="@color/gray_bg">
 
-    <!-- 상단 헤더 -->
+    <!-- 헤더 (간소화) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:orientation="horizontal"
         android:background="@color/navy_primary"
-        android:padding="24dp"
-        android:paddingTop="48dp"
-        android:paddingBottom="24dp">
+        android:paddingHorizontal="20dp"
+        android:paddingTop="36dp"
+        android:paddingBottom="14dp"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tvListStoreName"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="내 근무 기록"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="AlbaPass"
-            android:textSize="14sp"
+            android:textSize="12sp"
             android:textStyle="bold"
-            android:textColor="@color/orange_accent"
-            android:layout_marginBottom="6dp"/>
-
-        <TextView
-            android:id="@+id/tvListStoreName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="내 근무 기록"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:textColor="#FFFFFF"/>
+            android:textColor="@color/orange_accent"/>
     </LinearLayout>
 
-    <!-- 기간 선택 카드 -->
+    <!-- 기간 + 급여 통합 카드 -->
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:layout_margin="12dp"
+        android:layout_marginBottom="6dp"
         app:cardCornerRadius="14dp"
         app:cardElevation="4dp"
         app:cardBackgroundColor="#FFFFFF">
@@ -47,97 +49,98 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="12dp"
-            android:gravity="center_vertical">
-
-            <Button
-                android:id="@+id/btnStartDate"
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="44dp"
-                android:text="시작일"
-                android:textSize="13sp"
-                android:backgroundTint="#F0F4FF"
-                android:textColor="@color/navy_primary"
-                android:textStyle="bold"
-                app:cornerRadius="10dp"/>
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="~"
-                android:textSize="16sp"
-                android:textColor="#6c757d"
-                android:paddingHorizontal="8dp"/>
-
-            <Button
-                android:id="@+id/btnEndDate"
-                android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="44dp"
-                android:text="종료일"
-                android:textSize="13sp"
-                android:backgroundTint="#F0F4FF"
-                android:textColor="@color/navy_primary"
-                android:textStyle="bold"
-                app:cornerRadius="10dp"/>
-
-            <Button
-                android:id="@+id/btnSearch"
-                android:layout_width="wrap_content"
-                android:layout_height="44dp"
-                android:text="조회"
-                android:textSize="13sp"
-                android:backgroundTint="@color/navy_primary"
-                android:textColor="#FFFFFF"
-                android:textStyle="bold"
-                android:layout_marginStart="8dp"
-                app:cornerRadius="10dp"/>
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
-
-    <!-- 급여 요약 카드 -->
-    <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginBottom="8dp"
-        app:cardCornerRadius="14dp"
-        app:cardElevation="4dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="20dp"
-            android:background="@color/navy_primary">
+            android:padding="14dp">
 
-            <TextView
-                android:layout_width="wrap_content"
+            <!-- 날짜 + 조회 한 줄 -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="예상 급여"
-                android:textSize="12sp"
-                android:textColor="#B0BEC5"/>
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="10dp">
 
-            <TextView
-                android:id="@+id/tvTotalPay"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="기간을 선택하고 조회하세요"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:textColor="#FFFFFF"
-                android:layout_marginTop="4dp"/>
+                <Button
+                    android:id="@+id/btnStartDate"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="42dp"
+                    android:text="시작일"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:singleLine="true"
+                    android:backgroundTint="#FFF0F4FF"
+                    android:textColor="@color/navy_primary"
+                    app:cornerRadius="8dp"/>
 
-            <TextView
-                android:id="@+id/tvWageInfo"
-                android:layout_width="wrap_content"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=" ~ "
+                    android:textSize="14sp"
+                    android:textColor="#999"/>
+
+                <Button
+                    android:id="@+id/btnEndDate"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="42dp"
+                    android:text="종료일"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:singleLine="true"
+                    android:backgroundTint="#FFF0F4FF"
+                    android:textColor="@color/navy_primary"
+                    app:cornerRadius="8dp"/>
+
+                <Button
+                    android:id="@+id/btnSearch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="42dp"
+                    android:text="조회"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:backgroundTint="@color/navy_primary"
+                    android:textColor="#FFFFFF"
+                    android:layout_marginStart="8dp"
+                    android:paddingHorizontal="16dp"
+                    app:cornerRadius="8dp"/>
+            </LinearLayout>
+
+            <!-- 급여 요약 (한 줄) -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="기본 시급 적용"
-                android:textSize="12sp"
-                android:textColor="#B0BEC5"
-                android:layout_marginTop="4dp"/>
+                android:orientation="horizontal"
+                android:background="#FF1a237e"
+                android:padding="12dp"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="예상 급여  "
+                    android:textSize="12sp"
+                    android:textColor="#B0BEC5"/>
+
+                <TextView
+                    android:id="@+id/tvTotalPay"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:text="조회하세요"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"/>
+
+                <TextView
+                    android:id="@+id/tvWageInfo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textSize="11sp"
+                    android:textColor="#B0BEC5"/>
+            </LinearLayout>
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
@@ -148,7 +151,7 @@
         android:layout_height="match_parent"
         android:divider="@null"
         android:dividerHeight="0dp"
-        android:paddingTop="4dp"
+        android:paddingTop="2dp"
         android:paddingBottom="16dp"
         android:clipToPadding="false"/>
 

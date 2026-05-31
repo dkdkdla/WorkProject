@@ -43,7 +43,7 @@ public class ListActivity extends AppCompatActivity {
     private ArrayList<HashMap<String, String>> dataList = new ArrayList<>();
 
     // 🚨 수정 포인트: AppConfig 기반의 서블릿 경로 설정
-    private final String serverUrl = AppConfig.API_MY_ATTENDANCE;
+    private final String serverUrl = AppConfig.BASE_URL + "MyAttendanceApi";
     private static final String KEY_TYPE = "type";
 
     @Override
@@ -138,6 +138,7 @@ public class ListActivity extends AppCompatActivity {
                 page += "&startDate=" + sDate + "&endDate=" + eDate;
             }
 
+            android.util.Log.d("ListActivity", "요청 URL: " + page);
             URL url = new URL(page);
             conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
@@ -164,7 +165,10 @@ public class ListActivity extends AppCompatActivity {
                     HashMap<String, String> map = new HashMap<>();
                     map.put("date", json.getString("date"));
                     map.put("time", json.getString("time"));
-                    map.put(KEY_TYPE, json.getString(KEY_TYPE));
+                    // IN/OUT → 출근/퇴근 변환
+                    String rawType = json.getString(KEY_TYPE);
+                    String displayType = "IN".equals(rawType) ? "출근" : "OUT".equals(rawType) ? "퇴근" : rawType;
+                    map.put(KEY_TYPE, displayType);
                     tempList.add(map);
                 }
 
@@ -192,12 +196,15 @@ public class ListActivity extends AppCompatActivity {
                             TextView tvType = (TextView) view;
                             String type = (String) data;
                             tvType.setText(type);
-                            if ("출근".equals(type) || "IN".equals(type)) {
-                                tvType.setTextColor(Color.parseColor("#4CAF50"));
-                            } else if ("퇴근".equals(type) || "OUT".equals(type)) {
-                                tvType.setTextColor(Color.parseColor("#F44336"));
+                            if ("출근".equals(type)) {
+                                tvType.setBackgroundColor(Color.parseColor("#1cc88a"));
+                                tvType.setTextColor(Color.WHITE);
+                            } else if ("퇴근".equals(type)) {
+                                tvType.setBackgroundColor(Color.parseColor("#e74a3b"));
+                                tvType.setTextColor(Color.WHITE);
                             } else {
-                                tvType.setTextColor(Color.BLACK);
+                                tvType.setBackgroundColor(Color.parseColor("#6c757d"));
+                                tvType.setTextColor(Color.WHITE);
                             }
                             return true;
                         }
