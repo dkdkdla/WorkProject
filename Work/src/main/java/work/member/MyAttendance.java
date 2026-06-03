@@ -30,6 +30,13 @@ public class MyAttendance extends HttpServlet {
             return;
         }
 
+        // 매장 선택 파라미터 처리 (좌측 매장 목록 클릭 시)
+        String selectedStoreId = request.getParameter("storeId");
+        if (selectedStoreId != null && !selectedStoreId.isEmpty()) {
+            storeId = selectedStoreId;
+            session.setAttribute("userStoreId", selectedStoreId);
+        }
+
         // 1. 기간 설정
         String searchMonth = request.getParameter("searchMonth");
         String startDate   = request.getParameter("startDate");
@@ -173,7 +180,7 @@ public class MyAttendance extends HttpServlet {
             salaryDetail.put("totalPay",bp2+(int)holidayPay);
         }
 
-     // 4. 안드로이드 앱 요청이면 JSON 응답
+        // 4. 안드로이드 앱 요청이면 JSON 응답
         String isApp = request.getParameter("isApp");
         if ("true".equals(isApp)) {
             response.setContentType("application/json; charset=UTF-8");
@@ -200,7 +207,11 @@ public class MyAttendance extends HttpServlet {
             return;
         }
 
-        // 5. 웹 JSP 전달
+        // 5. 사이드바용 매장 목록 조회 및 웹 JSP 전달
+        ArrayList<String[]> myStores = getMyStores(userId);
+        request.setAttribute("myStores", myStores);
+        request.setAttribute("currentStoreId", storeId != null ? storeId : "");
+
         request.setAttribute("searchMonth",     searchMonth);
         request.setAttribute("startDate",       startDate);
         request.setAttribute("endDate",         endDate);
@@ -213,5 +224,23 @@ public class MyAttendance extends HttpServlet {
         request.setAttribute("salaryDetail",     salaryDetail);
 
         request.getRequestDispatcher("my_attendance.jsp").forward(request, response);
+    }
+
+    private ArrayList<String[]> getMyStores(String userId) {
+        ArrayList<String[]> list = new ArrayList<>();
+        String sql = "SELECT s.store_id, s.store_name " +
+                     "FROM tb_store s " +
+                     "JOIN tb_my_stores m ON s.store_id = m.store_id " +
+                     "WHERE m.mem_id = ? AND m.join_status = 'ACTIVE' AND s.store_status = 'ACTIVE' " +
+                     "ORDER BY s.store_name ASC";
+        try (java.sql.Connection conn = work.util.DBConn.getConnection();
+             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, userId);
+            try (java.sql.ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next())
+                    list.add(new String[]{rs.getString("store_id"), rs.getString("store_name")});
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
     }
 }

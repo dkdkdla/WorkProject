@@ -72,8 +72,6 @@ public class MemberDAO {
                 dto.setPhone(rs.getString("mem_phone"));
                 dto.setRole(rs.getString("mem_role") != null ? rs.getString("mem_role").trim() : null);
                 dto.setHourlyWage(rs.getInt("hourly_wage"));
-                dto.setStoreId(rs.getString("store_id"));
-                dto.setWorkDays(rs.getString("work_days") != null ? rs.getString("work_days") : "");
                 
                 return dto;
             }
@@ -354,10 +352,13 @@ public class MemberDAO {
         ArrayList<MemberDTO> list = new ArrayList<>();
         
         // 1. tb_my_stores를 사용하고 모든 컬럼을 가져옵니다.
-        String sql = "SELECT m.mem_id, m.mem_name, m.mem_phone, m.hourly_wage, m.mem_role, m.work_days, ISNULL(m.role_id, 0) as role_id, " +
+        String sql = "SELECT m.mem_id, m.mem_name, m.mem_phone, " +
+                     "ISNULL(r.hourly_wage, m.hourly_wage) as hourly_wage, m.mem_role, " +
+                     "ISNULL(ms.work_days,'') as work_days, ISNULL(ms.role_id, 0) as role_id, " +
                      "ISNULL(ms.work_start, '') as work_start, ISNULL(ms.work_end, '') as work_end, ISNULL(ms.work_type, '') as work_type " +
                      "FROM tb_member m " +
                      "JOIN tb_my_stores ms ON m.mem_id = ms.mem_id " +
+                     "LEFT JOIN tb_role r ON ms.role_id = r.role_id " +
                      "WHERE ms.store_id = ? AND ms.join_status = 'ACTIVE' " +
                      "ORDER BY m.mem_name";
 
@@ -445,7 +446,7 @@ public class MemberDAO {
     
     public ArrayList<MemberDTO> getAllMembers() {
         ArrayList<MemberDTO> list = new ArrayList<>();
-        String sql = "SELECT mem_name, mem_id, store_id, hourly_wage FROM tb_member";
+        String sql = "SELECT mem_name, mem_id, hourly_wage FROM tb_member";
         
         // DB 정보 (기존 DAO 설정과 동일하게)
         String dbUrl = "jdbc:sqlserver://localhost:1433;databaseName=Work;encrypt=false";
@@ -458,7 +459,6 @@ public class MemberDAO {
                 MemberDTO m = new MemberDTO();
                 m.setName(rs.getString("mem_name"));
                 m.setId(rs.getString("mem_id"));
-                m.setStoreId(rs.getString("store_id"));
                 m.setHourlyWage(rs.getInt("hourly_wage"));
                 list.add(m);
             }
@@ -477,7 +477,7 @@ public class MemberDAO {
             // 1. 회원 정보 저장 (tb_member) - 점장은 PENDING, 직원은 ACTIVE
             String memStatus = "A".equals(dto.getRole()) ? "PENDING" : "ACTIVE";
             String memStatus2 = "A".equals(dto.getRole()) ? "PENDING" : "ACTIVE";
-            String sql1 = "INSERT INTO tb_member (mem_id, mem_pw, mem_name, mem_phone, mem_role, hourly_wage, store_id, mem_status, mem_birth, work_days, role_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql1 = "INSERT INTO tb_member (mem_id, mem_pw, mem_name, mem_phone, mem_role, hourly_wage, mem_status, mem_birth, reg_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE())";
             pstmt = conn.prepareStatement(sql1);
             pstmt.setString(1, dto.getId());
             pstmt.setString(2, dto.getPw());
@@ -485,17 +485,20 @@ public class MemberDAO {
             pstmt.setString(4, dto.getPhone());
             pstmt.setString(5, dto.getRole());
             pstmt.setInt(6, dto.getHourlyWage());
-            pstmt.setString(7, storeId);
-            pstmt.setString(8, memStatus);
-            pstmt.setString(9, dto.getBirth());
-            pstmt.setString(10, dto.getWorkDays());
-            if (dto.getRoleId() > 0) { pstmt.setInt(11, dto.getRoleId()); } else { pstmt.setNull(11, java.sql.Types.INTEGER); }
+            pstmt.setString(7, memStatus);
+            // mem_birth NULL 안전 처리
+            String birth = dto.getBirth();
+            if (birth != null && !birth.trim().isEmpty()) {
+                pstmt.setString(8, birth.trim());
+            } else {
+                pstmt.setNull(8, java.sql.Types.DATE);
+            }
             pstmt.executeUpdate();
             pstmt.close();
 
             // 2. 직원인 경우 매장 연결 장부 저장 (tb_my_stores)
             if (storeId != null && !storeId.trim().isEmpty()) {
-                String sql2 = "INSERT INTO tb_my_stores (mem_id, store_id) VALUES (?, ?)";
+                String sql2 = "INSERT INTO tb_my_stores (mem_id, store_id, join_status) VALUES (?, ?, 'PENDING')";
                 pstmt = conn.prepareStatement(sql2);
                 pstmt.setString(1, dto.getId());
                 pstmt.setString(2, storeId);
@@ -544,7 +547,8 @@ public class MemberDAO {
         if (!isStoreExists(storeId)) return false;
 
         // 2. 존재한다면 사용자의 소속 매장 업데이트
-        String sql = "UPDATE tb_member SET store_id = ? WHERE mem_id = ?";
+        // store_id는 tb_my_stores에서 관리 - 이 메서드는 더 이상 사용하지 않음
+        String sql = "UPDATE tb_my_stores SET join_status = 'ACTIVE' WHERE mem_id = ? AND store_id = ?";
         try (Connection conn = DBConn.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
@@ -576,7 +580,7 @@ public class MemberDAO {
 
             // 2. 회원 테이블(tb_member)의 현재 매장 정보가 삭제한 매장과 같다면 NULL로 초기화
             // 🚨 이 부분이 빠지면 default.jsp에서 계속 이전 매장이 보입니다.
-            String sql2 = "UPDATE tb_member SET store_id = NULL WHERE mem_id = ? AND store_id = ?";
+            String sql2 = "UPDATE tb_my_stores SET join_status = 'REMOVED' WHERE mem_id = ? AND store_id = ?";
             pstmt = conn.prepareStatement(sql2);
             pstmt.setString(1, memId);
             pstmt.setString(2, storeId);
@@ -605,6 +609,33 @@ public class MemberDAO {
         return false;
     }
     // 점장용: 본인 소유 전체 매장의 소속 신청 대기 목록 (매장 선택 무관)
+    // 특정 매장의 소속 신청 대기 목록
+    public ArrayList<String[]> getPendingJoinsByStore(String storeId) {
+        ArrayList<String[]> list = new ArrayList<>();
+        if (storeId == null || storeId.isEmpty()) return list;
+        String sql = "SELECT ms.mem_id, m.mem_name, m.mem_phone, ms.store_id, s.store_name " +
+                     "FROM tb_my_stores ms " +
+                     "JOIN tb_member m ON ms.mem_id = m.mem_id " +
+                     "JOIN tb_store s ON ms.store_id = s.store_id " +
+                     "WHERE ms.join_status = 'PENDING' AND ms.store_id = ?";
+        try (Connection conn = DBConn.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, storeId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    list.add(new String[]{
+                        rs.getString("mem_id"),
+                        rs.getString("mem_name"),
+                        rs.getString("mem_phone"),
+                        rs.getString("store_id"),
+                        rs.getString("store_name")
+                    });
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
+    }
+
     public ArrayList<String[]> getPendingJoinsByOwner(String ownerId) {
         ArrayList<String[]> list = new ArrayList<>();
         String sql = "SELECT ms.mem_id, m.mem_name, m.mem_phone, ms.store_id, s.store_name " +
@@ -651,11 +682,11 @@ public class MemberDAO {
 
     // 현재 매장 기준 역할명 + 시급 조회
     public String[] getStoreRoleInfo(String memId, String storeId) {
-        // tb_my_stores 기반으로 매장별 역할명/시급 조회
+        // 해당 매장의 역할로 시급/역할명 조회
         String sql = "SELECT r.role_name, r.hourly_wage " +
                      "FROM tb_role r " +
-                     "JOIN tb_my_stores ms ON ms.role_id = r.role_id " +
-                     "WHERE ms.mem_id = ? AND ms.store_id = ?";
+                     "JOIN tb_member m ON m.role_id = r.role_id " +
+                     "WHERE m.mem_id = ? AND r.store_id = ?";
         try (Connection conn = DBConn.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, memId);

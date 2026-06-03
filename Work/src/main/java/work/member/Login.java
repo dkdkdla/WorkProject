@@ -61,21 +61,35 @@ public class Login extends HttpServlet {
             }
 
             HttpSession session = request.getSession();
-            session.setAttribute("userId", user.getId());
+            session.setAttribute("userId",   user.getId());
             session.setAttribute("userName", user.getName());
-            session.setAttribute("userRole", user.getRole());
-            session.setAttribute("userStoreId", user.getStoreId());
+            session.setAttribute("userRole",  user.getRole());
+
+            // tb_my_stores에서 첫 번째 ACTIVE 매장 자동 설정
+            String defaultStoreId   = null;
+            String defaultStoreName = null;
+            try (java.sql.Connection conn = work.util.DBConn.getConnection()) {
+                String storeSql = "SELECT ms.store_id, s.store_name " +
+                                  "FROM tb_my_stores ms " +
+                                  "JOIN tb_store s ON ms.store_id = s.store_id " +
+                                  "WHERE ms.mem_id = ? AND ms.join_status = 'ACTIVE' " +
+                                  "ORDER BY ms.store_id ASC";
+                try (java.sql.PreparedStatement ps = conn.prepareStatement(storeSql)) {
+                    ps.setString(1, user.getId());
+                    java.sql.ResultSet rs = ps.executeQuery();
+                    if (rs.next()) {
+                        defaultStoreId   = rs.getString("store_id");
+                        defaultStoreName = rs.getString("store_name");
+                    }
+                }
+            } catch (Exception e) { e.printStackTrace(); }
+            session.setAttribute("userStoreId",   defaultStoreId);
+            session.setAttribute("userStoreName", defaultStoreName);
 
             // SA(전체관리자)는 별도 페이지로 이동
-            String redirectPage = "SA".equals(user.getRole()) ? "superadmin_main.jsp" : "default.jsp";
+            String redirectPage = "SA".equals(user.getRole()) ? "SuperAdminMain" : "default.jsp";
 
-            out.print("{\"status\":\"success\""
-                + ", \"message\":\"환영합니다, " + user.getName() + "님!\""
-                + ", \"role\":\"" + user.getRole() + "\""
-                + ", \"name\":\"" + user.getName() + "\""
-                + ", \"id\":\"" + user.getId() + "\""
-                + ", \"storeId\":\"" + (user.getStoreId() != null ? user.getStoreId() : "") + "\""
-                + ", \"redirect\":\"" + redirectPage + "\"}");
+            out.print("{\"status\":\"success\", \"message\":\"환영합니다, " + user.getName() + "님!\", \"role\":\"" + user.getRole() + "\", \"redirect\":\"" + redirectPage + "\"}");
         } else {
             out.print("{\"status\":\"fail\", \"message\":\"아이디 또는 비밀번호가 일치하지 않습니다.\"}");
         }

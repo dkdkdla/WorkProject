@@ -27,9 +27,19 @@ public class RoleManage extends HttpServlet {
             return;
         }
 
+        // 파라미터로 매장 선택 가능 (다중 매장 지원)
+        String paramStore = request.getParameter("storeId");
+        if (paramStore != null && !paramStore.isEmpty()) storeId = paramStore;
+
+        // 관리자의 매장 목록
+        work.dao.MemberDAO mDao = new work.dao.MemberDAO();
+        String userId = (String) session.getAttribute("userId");
+        java.util.ArrayList<String[]> myStores = mDao.getMyStoreList(userId);
+
         ArrayList<String[]> roleList = getRoleList(storeId);
-        request.setAttribute("roleList", roleList);
-        request.setAttribute("storeId", storeId);
+        request.setAttribute("roleList",   roleList);
+        request.setAttribute("storeId",    storeId);
+        request.setAttribute("myStores",   myStores);
         request.getRequestDispatcher("role_manage.jsp").forward(request, response);
     }
 

@@ -9,6 +9,10 @@
     }
     ArrayList<String[]> roleList = (ArrayList<String[]>) request.getAttribute("roleList");
     if (roleList == null) roleList = new ArrayList<>();
+    ArrayList<String[]> myStores = (ArrayList<String[]>) request.getAttribute("myStores");
+    if (myStores == null) myStores = new ArrayList<>();
+    String currentRoleStoreId = (String) request.getAttribute("storeId");
+    if (currentRoleStoreId == null) currentRoleStoreId = "";
 %>
 <!DOCTYPE html>
 <html lang="ko">
@@ -22,75 +26,103 @@
     <link rel="stylesheet" href="<%=request.getContextPath()%>/css/style.css">
     <link rel="icon" type="image/png" href="<%=request.getContextPath()%>/jlogo.png">
     <style>
-        .wage-chip { display:inline-flex; flex-direction:column; align-items:center;
-                     background:#f8f9fc; border-radius:10px; padding:6px 12px; min-width:80px; }
-        .wage-chip .chip-label { font-size:10px; font-weight:700; margin-bottom:2px; }
-        .wage-chip .chip-value { font-size:13px; font-weight:700; }
-        .role-card { border:1px solid #e3e6f0; border-radius:12px; transition:box-shadow 0.2s; }
-        .role-card:hover { box-shadow:0 4px 12px rgba(0,0,0,0.08); }
-        .wage-input-clean { border:none; background:transparent; font-weight:700;
-                            color:#4e73df; font-size:22px; width:130px; text-align:center; }
-        .wage-input-clean:focus { outline:none; border-bottom:2px solid #4e73df; }
+        .wage-readonly { 
+            background-color: #f8f9fc !important; 
+            color: #6c757d; 
+        }
+        
+        /* 숫자 입력칸의 위아래 화살표(스피너) 숨기기 */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
     </style>
 </head>
 <body>
 
 <%@ include file="navbar.jsp" %>
 
-<div class="container mt-5 mb-5" style="max-width:760px;">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<%-- 컨테이너 가로 길이를 860px -> 1100px로 늘려 한눈에 들어오도록 수정 --%>
+<div class="container mt-5 mb-5" style="max-width:1100px;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="fw-bold text-dark mb-0">
             <i class="fa-solid fa-tags me-2 text-primary"></i>역할 관리
         </h3>
         <a href="default.jsp" class="btn btn-outline-secondary btn-sm fw-bold px-3">
-            <i class="fa-solid fa-arrow-left me-1"></i> 메인
+            <i class="fa-solid fa-arrow-left me-1"></i> 대시보드로
         </a>
     </div>
 
+    <%-- 매장 탭 선택 --%>
+    <% if (myStores.size() > 1) { %>
+    <div class="d-flex gap-2 mb-4 flex-wrap">
+        <% for (String[] s : myStores) { 
+            boolean isAct = s[0].equals(currentRoleStoreId);
+        %>
+        <a href="RoleManage?storeId=<%=s[0]%>"
+           class="btn btn-sm fw-bold <%=isAct ? "btn-primary" : "btn-outline-secondary"%>">
+            <i class="fa-solid fa-store me-1"></i><%=s[1]%>
+            <small class="ms-1 opacity-75">(<%=s[0]%>)</small>
+        </a>
+        <% } %>
+    </div>
+    <% } %>
+
     <%-- 역할 추가 카드 --%>
-    <div class="card border-0 shadow-sm p-4 mb-4" style="border-top:4px solid #4e73df !important;">
-        <h5 class="fw-bold mb-3"><i class="fa-solid fa-plus-circle me-2 text-primary"></i>새 역할 추가</h5>
+    <div class="card border-0 shadow-sm p-4 mb-4" style="border-top: 4px solid #4e73df !important;">
+        <h5 class="fw-bold mb-1"><i class="fa-solid fa-plus-circle me-2 text-primary"></i>새 역할 추가</h5>
+        <p class="text-muted small mb-3">기본 시급을 입력하면 야간·주말 시급이 자동 계산됩니다.</p>
         <div class="row g-3 align-items-end">
-            <div class="col-md-5">
+            <div class="col-lg-3 col-md-12">
                 <label class="form-label small fw-bold text-secondary">역할 이름</label>
                 <input type="text" id="newRoleName" class="form-control" placeholder="예: 홀 직원">
             </div>
-            <div class="col-md-4">
-                <label class="form-label small fw-bold text-secondary">기본 시급 (원/시)</label>
-                <div class="input-group">
-                    <input type="number" id="newWage" class="form-control fw-bold" placeholder="10030" min="0"
-                        oninput="calcAutoWage()">
-                    <span class="input-group-text">원</span>
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label small fw-bold text-secondary">기본 시급</label>
+                <div class="input-group flex-nowrap">
+                    <input type="number" id="newWage" class="form-control text-end" placeholder="10300" min="0" oninput="calcAutoWage()">
+                    <span class="input-group-text small">원</span>
                 </div>
             </div>
-            <div class="col-md-3 d-flex align-items-end">
-                <button type="button" onclick="addRole()" class="btn btn-primary fw-bold w-100 py-2">
-                    <i class="fa-solid fa-plus me-1"></i>추가
-                </button>
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label small fw-bold text-secondary">
+                    평일야간 <span class="badge bg-dark ms-1" style="font-size:10px;">×1.5</span>
+                </label>
+                <div class="input-group flex-nowrap">
+                    <input type="number" id="newNightWage" class="form-control wage-readonly text-end" placeholder="자동" readonly>
+                    <span class="input-group-text small">원</span>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label small fw-bold text-secondary">
+                    주말주간 <span class="badge bg-warning text-dark ms-1" style="font-size:10px;">×1.5</span>
+                </label>
+                <div class="input-group flex-nowrap">
+                    <input type="number" id="newWeekendWage" class="form-control wage-readonly text-end" placeholder="자동" readonly>
+                    <span class="input-group-text small">원</span>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <label class="form-label small fw-bold text-secondary">
+                    주말야간 <span class="badge bg-danger ms-1" style="font-size:10px;">×2.0</span>
+                </label>
+                <div class="input-group flex-nowrap">
+                    <input type="number" id="newWeekendNightWage" class="form-control wage-readonly text-end" placeholder="자동" readonly>
+                    <span class="input-group-text small">원</span>
+                </div>
+            </div>
+            <div class="col-lg-1 col-md-12 d-flex align-items-end">
+                <button type="button" onclick="addRole()" class="btn btn-primary fw-bold w-100 text-nowrap">추가</button>
             </div>
         </div>
-
-        <%-- 자동 계산 미리보기 --%>
-        <div class="d-flex gap-2 flex-wrap mt-3" id="newWagePreview" style="display:none!important;">
-        </div>
-        <div class="d-flex gap-2 flex-wrap mt-3" id="newWageChips">
-            <div class="wage-chip">
-                <span class="chip-label text-muted">평일주간</span>
-                <span class="chip-value text-dark" id="prevBase">-</span>
-            </div>
-            <div class="wage-chip">
-                <span class="chip-label text-dark">평일야간 ×1.5</span>
-                <span class="chip-value text-dark" id="prevNight">-</span>
-            </div>
-            <div class="wage-chip">
-                <span class="chip-label text-warning">휴일주간 ×1.5</span>
-                <span class="chip-value text-warning" id="prevWeekend">-</span>
-            </div>
-            <div class="wage-chip">
-                <span class="chip-label text-danger">휴일야간 ×2.0</span>
-                <span class="chip-value text-danger" id="prevWeekendNight">-</span>
-            </div>
-        </div>
+        <small class="text-muted mt-2 d-block">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            평일주간×1.0 / 평일야간·주말주간×1.5 / 주말야간×2.0 자동 적용
+        </small>
     </div>
 
     <%-- 역할 목록 --%>
@@ -98,70 +130,84 @@
         <h5 class="fw-bold mb-3"><i class="fa-solid fa-list me-2 text-muted"></i>역할 목록</h5>
 
         <% if (roleList.isEmpty()) { %>
-            <div class="text-center text-muted py-5">
-                <i class="fa-solid fa-tag fa-2x mb-2 d-block"></i>
-                <small>등록된 역할이 없습니다.</small>
+            <div class="text-center text-muted py-4">
+                <i class="fa-solid fa-tag fa-2x mb-2"></i>
+                <p class="mb-0 small">등록된 역할이 없습니다.</p>
             </div>
         <% } else { %>
-        <div class="d-flex flex-column gap-3" id="roleListContainer">
-            <% for (String[] r : roleList) {
-                int base  = Integer.parseInt(r[2]);
-                int wwn   = r.length > 4 ? Integer.parseInt(r[4]) : (int)(base * 1.5);
-                int wend  = r.length > 5 ? Integer.parseInt(r[5]) : (int)(base * 1.5);
-                int wendn = r.length > 6 ? Integer.parseInt(r[6]) : (int)(base * 2.0);
-            %>
-            <div class="role-card p-3 px-4" id="role-row-<%=r[0]%>">
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-
-                    <%-- 역할 이름 --%>
-                    <div style="min-width:130px;">
-                        <div class="small text-muted fw-bold mb-1">역할 이름</div>
-                        <input type="text" class="form-control form-control-sm fw-bold border-0 bg-light px-2"
-                            id="roleName-<%=r[0]%>" value="<%=r[1]%>" style="width:130px;">
-                    </div>
-
-                    <%-- 기본 시급 (크게) --%>
-                    <div class="text-center">
-                        <div class="small text-muted fw-bold mb-1">기본 시급</div>
-                        <div class="d-flex align-items-center gap-1">
-                            <input class="wage-input-clean"
-                                type="number" id="roleWage-<%=r[0]%>" value="<%=r[2]%>"
-                                oninput="updateAutoWage('<%=r[0]%>', this.value)">
-                            <span class="text-muted small">원</span>
-                        </div>
-                        <div class="text-muted" style="font-size:11px;">월 160h: <%=String.format("%,d", base*160)%>원</div>
-                    </div>
-
-                    <%-- 자동 계산 시급 칩 3개 --%>
-                    <div class="d-flex gap-2 flex-wrap">
-                        <div class="wage-chip">
-                            <span class="chip-label text-dark">평일야간 ×1.5</span>
-                            <span class="chip-value text-dark" id="roleNightWage-<%=r[0]%>"><%=String.format("%,d",wwn)%>원</span>
-                        </div>
-                        <div class="wage-chip">
-                            <span class="chip-label text-warning">휴일주간 ×1.5</span>
-                            <span class="chip-value text-warning" id="roleWeekendWage-<%=r[0]%>"><%=String.format("%,d",wend)%>원</span>
-                        </div>
-                        <div class="wage-chip">
-                            <span class="chip-label text-danger">휴일야간 ×2.0</span>
-                            <span class="chip-value text-danger" id="roleWeekendNightWage-<%=r[0]%>"><%=String.format("%,d",wendn)%>원</span>
-                        </div>
-                    </div>
-
-                    <%-- 버튼 --%>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-outline-primary fw-bold"
-                            onclick="editRole('<%=r[0]%>')">
-                            <i class="fa-solid fa-check"></i> 저장
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger fw-bold"
-                            onclick="deleteRole('<%=r[0]%>', '<%=r[1]%>')">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <% } %>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0 text-nowrap">
+                <thead class="table-light">
+                    <tr>
+                        <th style="min-width: 120px;">역할 이름</th>
+                        <th style="min-width: 140px;">기본 시급</th>
+                        <th style="min-width: 140px;">평일야간 <span class="badge bg-dark" style="font-size:10px;">×1.5</span></th>
+                        <th style="min-width: 140px;">주말주간 <span class="badge bg-warning text-dark" style="font-size:10px;">×1.5</span></th>
+                        <th style="min-width: 140px;">주말야간 <span class="badge bg-danger" style="font-size:10px;">×2.0</span></th>
+                        <th class="text-center" style="min-width: 120px;">관리</th>
+                    </tr>
+                </thead>
+                <tbody id="roleTableBody">
+                    <% for (String[] r : roleList) {
+                        int base      = Integer.parseInt(r[2]);
+                        int wwn       = r.length > 4 ? Integer.parseInt(r[4]) : (int)(base * 1.5);
+                        int wend      = r.length > 5 ? Integer.parseInt(r[5]) : (int)(base * 1.5);
+                        int wendn     = r.length > 6 ? Integer.parseInt(r[6]) : (int)(base * 2.0);
+                    %>
+                    <tr id="role-row-<%=r[0]%>">
+                        <td>
+                            <input type="text" class="form-control form-control-sm border-0 bg-transparent fw-bold"
+                                id="roleName-<%=r[0]%>" value="<%=r[1]%>">
+                        </td>
+                        <td>
+                            <div class="input-group input-group-sm flex-nowrap">
+                                <input type="number" class="form-control border-0 bg-transparent fw-bold text-primary text-end px-1"
+                                    id="roleWage-<%=r[0]%>" value="<%=r[2]%>"
+                                    oninput="updateAutoWage('<%=r[0]%>', this.value)">
+                                <span class="input-group-text bg-transparent border-0 text-muted small px-1">원/시</span>
+                            </div>
+                            <small class="text-muted d-block text-end pe-4" style="font-size:11px;">
+                                월 160h: <%=String.format("%,d", base * 160)%>원
+                            </small>
+                        </td>
+                        <td>
+                            <div class="input-group input-group-sm flex-nowrap">
+                                <input type="number" class="form-control wage-readonly text-end px-1"
+                                    id="roleNightWage-<%=r[0]%>" value="<%=wwn%>" readonly>
+                                <span class="input-group-text bg-transparent border-0 text-muted small px-1">원/시</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="input-group input-group-sm flex-nowrap">
+                                <input type="number" class="form-control wage-readonly text-end px-1"
+                                    id="roleWeekendWage-<%=r[0]%>" value="<%=wend%>" readonly>
+                                <span class="input-group-text bg-transparent border-0 text-muted small px-1">원/시</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="input-group input-group-sm flex-nowrap">
+                                <input type="number" class="form-control wage-readonly text-end px-1"
+                                    id="roleWeekendNightWage-<%=r[0]%>" value="<%=wendn%>" readonly>
+                                <span class="input-group-text bg-transparent border-0 text-muted small px-1">원/시</span>
+                            </div>
+                        </td>
+                        <td class="text-center align-middle">
+                            <%-- 버튼들이 절대 줄바꿈 되지 않도록 flex-nowrap 적용 --%>
+                            <div class="d-flex justify-content-center gap-1 flex-nowrap">
+                                <button class="btn btn-sm btn-outline-primary fw-bold text-nowrap"
+                                    onclick="editRole('<%=r[0]%>')">
+                                    <i class="fa-solid fa-check"></i> 저장
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger fw-bold"
+                                    onclick="deleteRole('<%=r[0]%>', '<%=r[1]%>')">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <% } %>
+                </tbody>
+            </table>
         </div>
         <% } %>
     </div>
@@ -172,10 +218,9 @@
 <script>
 function calcAutoWage() {
     var base = parseInt(document.getElementById('newWage').value) || 0;
-    document.getElementById('prevBase').innerText         = base > 0 ? base.toLocaleString() + '원' : '-';
-    document.getElementById('prevNight').innerText        = base > 0 ? Math.floor(base*1.5).toLocaleString() + '원' : '-';
-    document.getElementById('prevWeekend').innerText      = base > 0 ? Math.floor(base*1.5).toLocaleString() + '원' : '-';
-    document.getElementById('prevWeekendNight').innerText = base > 0 ? Math.floor(base*2.0).toLocaleString() + '원' : '-';
+    document.getElementById('newNightWage').value        = Math.floor(base * 1.5);
+    document.getElementById('newWeekendWage').value      = Math.floor(base * 1.5);
+    document.getElementById('newWeekendNightWage').value = Math.floor(base * 2.0);
 }
 
 function updateAutoWage(roleId, val) {
@@ -183,36 +228,39 @@ function updateAutoWage(roleId, val) {
     var n  = document.getElementById('roleNightWage-'        + roleId);
     var w  = document.getElementById('roleWeekendWage-'      + roleId);
     var wn = document.getElementById('roleWeekendNightWage-' + roleId);
-    if (n)  n.innerText  = base > 0 ? Math.floor(base*1.5).toLocaleString() + '원' : '-';
-    if (w)  w.innerText  = base > 0 ? Math.floor(base*1.5).toLocaleString() + '원' : '-';
-    if (wn) wn.innerText = base > 0 ? Math.floor(base*2.0).toLocaleString() + '원' : '-';
+    if (n)  n.value  = Math.floor(base * 1.5);
+    if (w)  w.value  = Math.floor(base * 1.5);
+    if (wn) wn.value = Math.floor(base * 2.0);
 }
 
 async function addRole() {
     var roleName = document.getElementById('newRoleName').value.trim();
     var wage     = document.getElementById('newWage').value.trim();
-    if (!roleName) { showToast('역할 이름을 입력해주세요.', 'warning'); return; }
+    if (!roleName) { alert('역할 이름을 입력해주세요.'); return; }
+
     var params = new URLSearchParams();
     params.append('mode', 'add');
     params.append('roleName', roleName);
     params.append('wage', wage || '0');
-    var res  = await fetch('RoleManage', { method:'POST', body:params });
+    var res  = await fetch('RoleManage', { method: 'POST', body: params });
     var data = await res.json();
-    showToast(data.message, data.status === 'success' ? 'success' : 'danger');
+    alert(data.message);
     if (data.status === 'success') location.reload();
 }
 
 async function editRole(roleId) {
     var roleName = document.getElementById('roleName-' + roleId).value.trim();
     var wage     = document.getElementById('roleWage-'  + roleId).value.trim();
+
     var params = new URLSearchParams();
     params.append('mode', 'edit');
     params.append('roleId', roleId);
     params.append('roleName', roleName);
     params.append('wage', wage || '0');
-    var res  = await fetch('RoleManage', { method:'POST', body:params });
+
+    var res  = await fetch('RoleManage', { method: 'POST', body: params });
     var data = await res.json();
-    showToast(data.message, data.status === 'success' ? 'success' : 'danger');
+    alert(data.message);
 }
 
 async function deleteRole(roleId, roleName) {
@@ -220,9 +268,10 @@ async function deleteRole(roleId, roleName) {
     var params = new URLSearchParams();
     params.append('mode', 'delete');
     params.append('roleId', roleId);
-    var res  = await fetch('RoleManage', { method:'POST', body:params });
+
+    var res  = await fetch('RoleManage', { method: 'POST', body: params });
     var data = await res.json();
-    showToast(data.message, data.status === 'success' ? 'success' : 'danger');
+    alert(data.message);
     if (data.status === 'success') {
         var row = document.getElementById('role-row-' + roleId);
         if (row) row.remove();

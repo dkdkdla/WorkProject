@@ -1,7 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="work.dto.MemberDTO" %>
 <%@ page import="java.util.ArrayList" %>
-<%@ page import="java.util.ArrayList" %>
 <%
     String loggedInId   = (String)session.getAttribute("userId");
     String userRolesess = (String)session.getAttribute("userRole");
@@ -21,9 +20,11 @@
 
     ArrayList<String[]> pendingList = (ArrayList<String[]>)request.getAttribute("pendingList");
     if (pendingList == null) pendingList = new ArrayList<>();
+
     Boolean _night   = (Boolean)request.getAttribute("useNightPay");
     Boolean _weekend = (Boolean)request.getAttribute("useWeekendPay");
     Boolean _holiday = (Boolean)request.getAttribute("useHolidayPay");
+
     boolean useNightPay   = _night   != null ? _night   : true;
     boolean useWeekendPay = _weekend != null ? _weekend : true;
     boolean useHolidayPay = _holiday != null ? _holiday : true;
@@ -152,7 +153,7 @@
                         <div class="d-flex gap-2">
                             <button class="btn btn-sm btn-outline-warning fw-bold"
                                 data-bs-toggle="modal" data-bs-target="#storeSettingModal">
-                                <i class="fa-solid fa-gear me-1"></i> 매장 설정
+                                <i class="fa-solid fa-gear me-1"></i> 매장 급여 설정
                             </button>
                             <a href="RoleManage" class="btn btn-sm btn-outline-primary fw-bold">
                                 <i class="fa-solid fa-tags me-1"></i> 역할 관리
@@ -259,6 +260,7 @@
                                         String ws = m.getWorkStart() != null ? m.getWorkStart() : "";
                                         String we = m.getWorkEnd()   != null ? m.getWorkEnd()   : "";
                                         String wt = m.getWorkType()  != null ? m.getWorkType()  : "";
+                                        String wDays = (m.getWorkDays() != null && !m.getWorkDays().isEmpty()) ? m.getWorkDays() : "미설정";
                                         boolean hasSchedule = !ws.isEmpty() && !we.isEmpty();
                                     %>
                                     <div class="d-flex align-items-center gap-1">
@@ -277,7 +279,7 @@
                                         </div>
                                         <button class="btn btn-xs btn-outline-secondary border py-0 px-1 ms-1"
                                             style="font-size:11px; white-space:nowrap;"
-                                            onclick="openWorkSettingModal('<%=m.getId()%>','<%=m.getName()%>','<%=ws%>','<%=we%>','<%=wt%>')">
+                                            onclick="openWorkSettingModal('<%=m.getId()%>','<%=m.getName()%>','<%=ws%>','<%=we%>','<%=wt%>','<%=wDays%>')">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </button>
                                     </div>
@@ -294,7 +296,7 @@
                                             <i class="fa-solid fa-lock"></i> 고정
                                         </button>
                                     <%}%>
-                                </td>
+                                 </td>
                             </tr>
 <%  } %>
                             </tbody>
@@ -354,6 +356,14 @@
             <div class="modal-body">
                 <input type="hidden" id="wsMemId">
                 <input type="hidden" id="wsStoreId" value="<%=currentStoreId%>">
+
+                <%-- 요일 표시 영역 추가 --%>
+                <div class="d-flex justify-content-between align-items-center p-3 bg-light border rounded-3 mb-4">
+                    <span class="fw-bold text-secondary small">
+                        <i class="fa-solid fa-calendar-week me-1"></i>지정된 근무 요일
+                    </span>
+                    <span class="fw-bold text-primary" id="workSettingDays"></span>
+                </div>
 
                 <%-- 시간대 설정 --%>
                 <div class="mb-4">
@@ -635,7 +645,7 @@ async function handleJoin(memId, storeId, action) {
     }
 }
 
-// 새 매장 신청 (기능 연결)
+// 새 매장 신청
 async function requestCreateStore() {
     const storeId   = document.getElementById('newStoreId').value.trim();
     const storeName = document.getElementById('newStoreName').value.trim();
@@ -662,7 +672,7 @@ async function requestCreateStore() {
     }
 }
 
-// 매장 설정 저장 (UI only - 주휴수당 기능은 추후 연결)
+// 매장 설정 저장
 async function saveStoreSetting() {
     var params = new URLSearchParams();
     params.append('action',       'saveStoreSetting');
@@ -680,18 +690,18 @@ async function saveStoreSetting() {
     } catch(e) { showToast('통신 오류가 발생했습니다.', 'danger'); }
 }
 
-// 근무 설정 모달 열기
-function openWorkSettingModal(memId, memName, workStart, workEnd, workType) {
+// 근무 설정 모달 열기 (요일 변수 추가)
+function openWorkSettingModal(memId, memName, workStart, workEnd, workType, workDays) {
     document.getElementById('wsMemId').value       = memId;
     document.getElementById('workSettingName').innerText = '- ' + memName;
+    document.getElementById('workSettingDays').innerText = workDays;
+
     document.getElementById('wsStart').value = workStart || '';
     document.getElementById('wsEnd').value   = workEnd   || '';
-
-    // 라디오 선택
+    
     document.querySelectorAll('input[name="wsType"]').forEach(function(r) {
         r.checked = (r.value === workType);
     });
-
     updateWagePreview();
     var modal = new bootstrap.Modal(document.getElementById('workSettingModal'));
     modal.show();
@@ -703,7 +713,6 @@ function updateWagePreview() {
     var endVal   = document.getElementById('wsEnd').value;
     var typeEl   = document.querySelector('input[name="wsType"]:checked');
     var preview  = document.getElementById('wagePreview');
-
     if (!startVal || !endVal || !typeEl) {
         preview.innerHTML = '<span class="text-muted small">시간대·유형을 선택하면 표시됩니다.</span>';
         return;
@@ -716,7 +725,6 @@ function updateWagePreview() {
 
     var isNight  = endH >= 22 || endH < 6 || startH < 6;
     var hasDay   = startH < 22 && endH > 6;
-
     if (workType === '평일' || workType === '전체') {
         if (hasDay)   html += '<span class="badge bg-primary">평일주간 ×1.0</span> ';
         if (isNight)  html += '<span class="badge bg-dark">평일야간 ×1.5</span> ';
@@ -736,7 +744,6 @@ async function saveWorkSetting() {
     var start    = document.getElementById('wsStart').value;
     var end      = document.getElementById('wsEnd').value;
     var typeEl   = document.querySelector('input[name="wsType"]:checked');
-
     if (!start || !end) { showToast('근무 시간을 입력해주세요.', 'warning'); return; }
     if (!typeEl)        { showToast('근무 유형을 선택해주세요.', 'warning'); return; }
 
@@ -761,7 +768,7 @@ async function saveWorkSetting() {
     }
 }
 
-// 시간 변경 시 미리보기 업데이트
+// 이벤트 리스너 바인딩
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('wsStart').addEventListener('change', updateWagePreview);
     document.getElementById('wsEnd').addEventListener('change', updateWagePreview);
@@ -769,7 +776,6 @@ document.addEventListener('DOMContentLoaded', function() {
         r.addEventListener('change', updateWagePreview);
     });
 });
-
 document.addEventListener('DOMContentLoaded', loadRoleOptions);
 </script>
 </body>

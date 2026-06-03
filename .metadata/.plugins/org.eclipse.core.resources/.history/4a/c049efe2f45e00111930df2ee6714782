@@ -1,0 +1,429 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ page import="work.dto.AttendanceDTO" %>
+<%@ page import="work.dto.MemberDTO" %>
+<%@ page import="work.util.PayCalcUtil" %>
+<%@ page import="java.util.*" %>
+<%@ page import="java.time.*" %>
+<%
+    // 세션 체크
+    String _userId = (String) session.getAttribute("userId");
+    String _role   = (String) session.getAttribute("userRole");
+    if (_userId == null || !"A".equals(_role != null ? _role.trim() : "")) {
+        response.sendRedirect("login.jsp");
+        return;
+    }
+
+    // 1. 서블릿(AdminHistory)으로부터 데이터 수신
+    ArrayList<AttendanceDTO> fullList   = (ArrayList<AttendanceDTO>) request.getAttribute("fullList");
+    ArrayList<MemberDTO>     memberList = (ArrayList<MemberDTO>)     request.getAttribute("memberList");
+
+    // 🚨 팩트체크: 만약 서블릿을 거치지 않고 직접 JSP에 접속했다면 서블릿으로 강제 이동시킵니다.
+    if (fullList == null || memberList == null) {
+        response.sendRedirect("AdminHistory");
+        return;
+    }
+
+    // 서블릿이 다시 보내준 검색 파라미터 복구
+    String startDate = (String)request.getAttribute("startDate");
+    String endDate = (String)request.getAttribute("endDate");
+    String searchMemId = (String)request.getAttribute("searchMemId");
+    
+    // 기본값 방어 코드
+    if (startDate == null) startDate = "";
+    if (endDate == null) endDate = "";
+    if (searchMemId == null) searchMemId = "";
+
+    // 2. 페이징 처리 (전달받은 fullList 기준)
+    int currentPage = 1;
+    String pageParam = request.getParameter("page");
+    if (pageParam != null && !pageParam.isEmpty()) {
+        currentPage = Integer.parseInt(pageParam);
+    }
+    int itemsPerPage = 10;
+    int totalItems = fullList.size();
+    int totalPages = (int)Math.ceil((double)totalItems / itemsPerPage);
+    if (totalPages == 0) totalPages = 1;
+
+    int startIndex = (currentPage - 1) * itemsPerPage;
+    int endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+    List<AttendanceDTO> list = (totalItems > 0) ? fullList.subList(startIndex, endIndex) : new ArrayList<>();
+
+    // 3. 급여 계산 로직 (기존 로직 유지하되 fullList 기반으로 작동)
+    long totalMinutes = 0;      
+    double basePay = 0;         
+    double holidayPay = 0;      
+    int hourlyWage = 0;
+    String targetName = "";
+    int totalEstimatedSalary = 0;
+    
+    if (!searchMemId.equals("") && fullList.size() > 0) {
+        // 직원 이름 조회
+        for (MemberDTO m : memberList) {
+            if (m.getId().equals(searchMemId)) {
+                hourlyWage = m.getHourlyWage();
+                targetName = m.getName();
+                break;
+            }
+        }
+
+        // IN/OUT 쌍을 매칭하여 PayCalcUtil로 급여 계산
+        // calcList는 오래된 순서(오름차순)로 정렬
+        ArrayList<AttendanceDTO> calcList = new ArrayList<>(fullList);
+        Collections.reverse(calcList);
+
+        // storeKey → 마지막 IN 기록 매핑
+        Map<String, AttendanceDTO> lastInMap = new HashMap<>();
+        Map<String, Long> weeklyMap = new HashMap<>();
+
+        for (AttendanceDTO dto : calcList) {
+            String storeKey = dto.getStoreName();
+            try {
+                if ("출근".equals(dto.getAttType()) || "IN".equals(dto.getAttType())) {
+                    lastInMap.put(storeKey, dto);
+                } else if ("퇴근".equals(dto.getAttType()) || "OUT".equals(dto.getAttType())) {
+                    if (lastInMap.containsKey(storeKey)) {
+                        AttendanceDTO inDto  = lastInMap.get(storeKey);
+                        String inTimeStr  = inDto.getAttTime();   // "yyyy-MM-dd HH:mm"
+                        String outTimeStr = dto.getAttTime();
+
+                        LocalDate  workDate  = LocalDate.parse(inTimeStr.substring(0, 10));
+                        LocalTime  startTime = LocalTime.parse(inTimeStr.substring(11, 16));
+                        LocalTime  endTime   = LocalTime.parse(outTimeStr.substring(11, 16));
+                        int rid = inDto.getRoleId();
+
+                        // PayCalcUtil로 급여 계산 (주간/야간/주말 자동 분리)
+                        int pay = PayCalcUtil.calcPay(rid, workDate, startTime, endTime);
+                        basePay += pay;
+
+                        // 주휴수당용 주간 근무 분 누적
+                        long diffMin = java.time.Duration.between(startTime, endTime).toMinutes();
+                        if (diffMin < 0) diffMin += 24 * 60; // 자정 넘기는 경우
+                        totalMinutes += diffMin;
+                        String weekKey = workDate.getYear() + "-" + workDate.get(java.time.temporal.WeekFields.ISO.weekOfWeekBasedYear());
+                        weeklyMap.put(weekKey, weeklyMap.getOrDefault(weekKey, 0L) + diffMin);
+
+                        lastInMap.remove(storeKey);
+                    }
+                }
+            } catch (Exception e) {}
+        }
+
+        // 주휴수당 계산 (주 15시간 이상 시 적용)
+        for (String key : weeklyMap.keySet()) {
+            if (weeklyMap.get(key) >= 900) { // 900분 = 15시간
+                double weekHours = Math.min(weeklyMap.get(key) / 60.0, 40);
+                holidayPay += (weekHours / 40.0) * 8 * hourlyWage;
+            }
+        }
+        totalEstimatedSalary = (int)(basePay + holidayPay);
+    }
+%>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>근태 관리 - AlbaPass</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="<%=request.getContextPath()%>/css/style.css">
+    <link rel="icon" type="image/png" href="<%=request.getContextPath()%>/jlogo.png">
+    <style>
+        .form-check-input[type="radio"] { display: none; }
+        .form-check-input[type="radio"]:checked + label.btn-outline-success { background-color: #198754 !important; color: white !important; }
+        .form-check-input[type="radio"]:checked + label.btn-outline-secondary { background-color: #6c757d !important; color: white !important; }
+    </style>
+</head>
+<body>
+
+<%@ include file="navbar.jsp" %>
+
+<div class="container mt-5 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold text-dark mb-0"><i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i>근태 관리 및 정산</h3>
+        <a href="default.jsp" class="btn btn-outline-secondary btn-sm fw-bold px-3">
+            <i class="fa-solid fa-arrow-left me-1"></i> 대시보드
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card custom-card p-4 mb-4 border-top border-4 border-primary shadow-sm">
+                <h6 class="fw-bold mb-3"><i class="fa-solid fa-filter me-2 text-primary"></i>조회 필터</h6>
+                <form action="AdminHistory" method="get">
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold text-secondary">시작일</label>
+                        <input type="date" name="startDate" value="<%=startDate%>" class="form-control form-control-sm">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">종료일</label>
+                        <input type="date" name="endDate" value="<%=endDate%>" class="form-control form-control-sm">
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-secondary">직원 선택</label>
+                        <select name="searchMemId" class="form-select form-select-sm">
+                            <option value="">전체 직원</option>
+                            <% for(MemberDTO m : memberList) { %>
+                                <option value="<%=m.getId()%>" <%=m.getId().equals(searchMemId)?"selected":""%>><%=m.getName()%></option>
+                            <% } %>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 fw-bold mb-2">
+                        <i class="fa-solid fa-search me-1"></i>조회하기
+                    </button>
+                    <button type="button" class="btn btn-success w-100 fw-bold" onclick="openAddModal()">
+                        <i class="fa-solid fa-plus me-1"></i> 기록 수동 추가
+                    </button>
+                </form>
+            </div>
+            <% if (!searchMemId.equals("") && fullList.size() > 0) { %>
+                <div class="card custom-card p-4 text-white border-0 shadow-lg" style="background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);">
+                    <small class="opacity-75"><%=targetName%>님 예상 급여</small>
+                    <h2 class="fw-bold mb-3">￦ <%=String.format("%,d", totalEstimatedSalary)%></h2>
+                    <hr class="opacity-25">
+                    <div class="d-flex justify-content-between small"><span>기본급</span><span>￦<%=String.format("%,d", (int)basePay)%></span></div>
+                    <div class="d-flex justify-content-between small mt-1"><span>주휴수당</span><span>￦<%=String.format("%,d", (int)holidayPay)%></span></div>
+                </div>
+            <% } %>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card custom-card p-0 overflow-hidden shadow-sm">
+                <div class="table-responsive">
+                    <table class="table custom-table mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">직원명</th>
+                                <th>날짜</th>
+                                <th>출근 → 퇴근</th>
+                                <th class="text-center">상태</th>
+                                <th class="text-center d-none d-md-table-cell">관리</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <%
+                            // IN/OUT 쌍 매칭 (날짜+직원 기준)
+                            java.util.List<AttendanceDTO> ascList = new java.util.ArrayList<>(list);
+                            java.util.Collections.reverse(ascList);
+                            java.util.LinkedHashMap<String,AttendanceDTO> pendingIn = new java.util.LinkedHashMap<>();
+                            java.util.List<String[]> paired = new java.util.ArrayList<>();
+                            int keyCounter = 0;
+                            for (AttendanceDTO d : ascList) {
+                                String date = d.getAttTime().substring(0,10);
+                                String time = d.getAttTime().substring(11,16);
+                                boolean isIn2 = "IN".equals(d.getAttType()) || "출근".equals(d.getAttType());
+                                String pKey = d.getMemberId() + "_" + date;
+                                if (isIn2) {
+                                    pendingIn.put(pKey + "_" + (keyCounter++), d);
+                                } else {
+                                    // 같은 날 같은 직원의 미완성 IN 찾기
+                                    String foundKey = null;
+                                    for (String k : pendingIn.keySet()) {
+                                        if (k.startsWith(pKey)) { foundKey = k; break; }
+                                    }
+                                    if (foundKey != null) {
+                                        AttendanceDTO inD = pendingIn.remove(foundKey);
+                                        paired.add(new String[]{
+                                            inD.getMemberId(), date,
+                                            inD.getAttTime().substring(11,16),
+                                            time, String.valueOf(inD.getIdx()), String.valueOf(d.getIdx()), "완료"
+                                        });
+                                    } else {
+                                        paired.add(new String[]{ d.getMemberId(), date, "-", time, null, String.valueOf(d.getIdx()), "완료" });
+                                    }
+                                }
+                            }
+                            for (AttendanceDTO inD : pendingIn.values()) {
+                                paired.add(new String[]{ inD.getMemberId(),
+                                    inD.getAttTime().substring(0,10),
+                                    inD.getAttTime().substring(11,16),
+                                    null, String.valueOf(inD.getIdx()), null, "근무중" });
+                            }
+                            paired.sort((a,b) -> b[1].compareTo(a[1]));
+                            if (paired.isEmpty()) { %>
+                                <tr><td colspan="5" class="text-center py-5 text-muted">기록이 없습니다.</td></tr>
+                            <% }
+                            for (String[] p : paired) {
+                                // p: [0]name [1]date [2]inTime [3]outTime [4]inIdx [5]outIdx [6]status
+                                boolean isDone = "완료".equals(p[6]);
+                                boolean isWorking = "근무중".equals(p[6]);
+                            %>
+                            <tr>
+                                <td class="ps-4 fw-bold text-dark"><%=p[0]%></td>
+                                <td>
+                                    <span class="fw-bold"><%=p[1]%></span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success-subtle text-success px-2 py-1 me-1" style="font-size:13px;">
+                                        <i class="fa-solid fa-arrow-right-to-bracket me-1"></i><%=p[2]%>
+                                    </span>
+                                    <%if (p[3] != null) {%>
+                                    <span class="text-muted fw-bold mx-1">→</span>
+                                    <span class="badge bg-secondary-subtle text-secondary px-2 py-1" style="font-size:13px;">
+                                        <i class="fa-solid fa-arrow-right-from-bracket me-1"></i><%=p[3]%>
+                                    </span>
+                                    <%} else {%>
+                                    <span class="badge bg-warning-subtle text-warning px-2 py-1" style="font-size:12px;">
+                                        <i class="fa-solid fa-spinner fa-spin me-1"></i>근무중
+                                    </span>
+                                    <%}%>
+                                </td>
+                                <td class="text-center">
+                                    <%if (isDone) {%>
+                                        <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill fw-bold">완료</span>
+                                    <%} else {%>
+                                        <span class="badge bg-warning-subtle text-warning px-3 py-2 rounded-pill fw-bold">근무중</span>
+                                    <%}%>
+                                </td>
+                                <td class="text-center d-none d-md-table-cell">
+                                    <%if (p[4] != null) {%>
+                                    <button class="btn btn-sm btn-outline-warning border-0 me-1" title="출근 수정"
+                                        onclick="openEditModal('<%=p[4]%>', '<%=p[1]%>', '<%=p[2]%>', '출근', '<%=p[0]%>')">✏️출</button>
+                                    <%}%>
+                                    <%if (p[5] != null) {%>
+                                    <button class="btn btn-sm btn-outline-secondary border-0 me-1" title="퇴근 수정"
+                                        onclick="openEditModal('<%=p[5]%>', '<%=p[1]%>', '<%=p[3] != null ? p[3] : ""  %>', '퇴근', '<%=p[0]%>')">✏️퇴</button>
+                                    <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteRecord('<%=p[5]%>')">🗑️</button>
+                                    <%} else if (p[4] != null) {%>
+                                    <button class="btn btn-sm btn-outline-danger border-0" onclick="deleteRecord('<%=p[4]%>')">🗑️</button>
+                                    <%}%>
+                                </td>
+                            </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="card-footer bg-white py-3 border-0">
+                    <nav>
+                        <ul class="pagination pagination-sm justify-content-center mb-0">
+                            <li class="page-item <%= (currentPage == 1) ? "disabled" : "" %>">
+                                <a class="page-link" href="AdminHistory?startDate=<%=startDate%>&endDate=<%=endDate%>&searchMemId=<%=searchMemId%>&page=<%=currentPage-1%>">이전</a>
+                            </li>
+                            <% for(int i=1; i<=totalPages; i++) { %>
+                                <li class="page-item <%= (i == currentPage) ? "active" : "" %>">
+                                    <a class="page-link" href="AdminHistory?startDate=<%=startDate%>&endDate=<%=endDate%>&searchMemId=<%=searchMemId%>&page=<%=i%>"><%=i%></a>
+                                </li>
+                            <% } %>
+                            <li class="page-item <%= (currentPage == totalPages) ? "disabled" : "" %>">
+                                <a class="page-link" href="AdminHistory?startDate=<%=startDate%>&endDate=<%=endDate%>&searchMemId=<%=searchMemId%>&page=<%=currentPage+1%>">다음</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="attModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalTitle">
+                    <i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i>근태 기록 추가
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="AdminAttendanceAction" method="post">
+                <div class="modal-body pt-3">
+                    <input type="hidden" name="mode" id="modalMode" value="add">
+                    <input type="hidden" name="idx" id="modalIdx">
+                    <input type="hidden" name="returnStartDate" value="<%=startDate%>">
+                    <input type="hidden" name="returnEndDate" value="<%=endDate%>">
+                    <input type="hidden" name="returnSearchMemId" value="<%=searchMemId%>">
+
+                    <%-- 직원 선택 --%>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">직원 선택</label>
+                        <select name="memId" id="modalMemId" class="form-select" required>
+                            <% for(MemberDTO m : memberList) { %>
+                                <option value="<%=m.getId()%>"><%=m.getName()%> (<%=m.getId()%>)</option>
+                            <% } %>
+                        </select>
+                    </div>
+
+                    <%-- 출퇴근 구분 --%>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">구분</label>
+                        <div class="d-flex gap-2">
+                            <div class="form-check form-check-inline flex-fill">
+                                <input class="form-check-input" type="radio" name="type" id="typeIn" value="출근" checked>
+                                <label class="form-check-label btn btn-outline-success w-100 fw-bold" for="typeIn">
+                                    <i class="fa-solid fa-arrow-right-to-bracket me-1"></i>출근
+                                </label>
+                            </div>
+                            <div class="form-check form-check-inline flex-fill">
+                                <input class="form-check-input" type="radio" name="type" id="typeOut" value="퇴근">
+                                <label class="form-check-label btn btn-outline-secondary w-100 fw-bold" for="typeOut">
+                                    <i class="fa-solid fa-arrow-right-from-bracket me-1"></i>퇴근
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <%-- 날짜+시간 한 줄로 --%>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">날짜 및 시간</label>
+                        <div class="input-group">
+                            <input type="date" name="date" id="modalDate" class="form-control" required>
+                            <input type="time" name="time" id="modalTime" class="form-control" required>
+                        </div>
+                        <small class="text-muted">날짜와 시간을 함께 선택하세요.</small>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light fw-bold px-4" data-bs-dismiss="modal">취소</button>
+                    <button type="submit" class="btn btn-primary fw-bold px-4">
+                        <i class="fa-solid fa-check me-1"></i>저장하기
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<form id="deleteForm" action="AdminAttendanceAction" method="post" style="display:none;">
+    <input type="hidden" name="mode" value="delete">
+    <input type="hidden" name="idx" id="deleteIdx">
+    <input type="hidden" name="returnStartDate" value="<%=startDate%>">
+    <input type="hidden" name="returnEndDate" value="<%=endDate%>">
+    <input type="hidden" name="returnSearchMemId" value="<%=searchMemId%>">
+</form>
+
+<%@ include file="footer.jsp" %>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    const attModal = new bootstrap.Modal(document.getElementById('attModal'));
+
+    function openAddModal() {
+        document.getElementById('modalTitle').innerText = "기록 수동 추가";
+        document.getElementById('modalMode').value = "add";
+        document.getElementById('modalIdx').value = "";
+        document.getElementById('modalMemId').disabled = false;
+        attModal.show();
+    }
+
+    function openEditModal(idx, date, time, type, memId) {
+        document.getElementById('modalTitle').innerText = "기록 수정";
+        document.getElementById('modalMode').value = "update";
+        document.getElementById('modalIdx').value = idx;
+        document.getElementById('modalDate').value = date;
+        document.getElementById('modalTime').value = time;
+        document.getElementById('modalType').value = type;
+        document.getElementById('modalMemId').value = memId;
+        document.getElementById('modalMemId').disabled = true; 
+        attModal.show();
+    }
+
+    function deleteRecord(idx) {
+        if(confirm("정말 이 근태 기록을 삭제하시겠습니까?")) {
+            document.getElementById('deleteIdx').value = idx;
+            document.getElementById('deleteForm').submit();
+        }
+    }
+</script>
+</body>
+</html>

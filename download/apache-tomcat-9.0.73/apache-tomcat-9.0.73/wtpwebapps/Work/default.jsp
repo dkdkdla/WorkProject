@@ -195,11 +195,17 @@
                         <form action="ExcelDownload" method="get" class="row g-2 text-center">
                             <div class="col-12 fw-bold text-success mb-2 small"><i class="fa-solid fa-file-excel me-1"></i>급여 정산서(Excel)</div>
                             <input type="hidden" name="storeId" value="<%=userStoreId%>">
-                            <div class="col-6"><input type="number" name="year" value="2026" class="form-control form-control-sm text-center"></div>
+<%
+    java.util.Calendar excelCal = java.util.Calendar.getInstance();
+    excelCal.add(java.util.Calendar.MONTH, -1);
+    int excelYear  = excelCal.get(java.util.Calendar.YEAR);
+    int excelMonth = excelCal.get(java.util.Calendar.MONTH) + 1;
+%>
+                            <div class="col-6"><input type="number" name="year" value="<%=excelYear%>" class="form-control form-control-sm text-center"></div>
                             <div class="col-6">
                                 <select name="month" class="form-select form-select-sm">
                                     <% for(int i=1; i<=12; i++) { %>
-                                        <option value="<%=i%>" <%= today.contains("-05-") && i==5 ? "selected" : "" %>><%=i%>월</option>
+                                        <option value="<%=i%>" <%=i==excelMonth ? "selected" : ""%>><%=i%>월</option>
                                     <% } %>
                                 </select>
                             </div>
@@ -271,16 +277,6 @@
 </div>
 
 
-<script>
-function goMyAttendance() {
-    var today = new Date();
-    var y = today.getFullYear();
-    var m = String(today.getMonth()+1).padStart(2,'0');
-    var start = y + '-' + m + '-01';
-    var end   = y + '-' + m + '-' + String(new Date(y, today.getMonth()+1, 0).getDate()).padStart(2,'0');
-    location.href = 'MyAttendance?startDate=' + start + '&endDate=' + end;
-}
-</script>
 <%@ include file="footer.jsp" %>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>

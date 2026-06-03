@@ -31,20 +31,41 @@ public class AdminAttendanceAction extends HttpServlet {
         // 2. 모드별 처리 (추가, 수정, 삭제)
         try {
             if ("add".equals(mode)) {
+                // 단일 수동 추가 유지
                 String memId = request.getParameter("memId");
                 String type = request.getParameter("type");
                 String fullTime = request.getParameter("date") + " " + request.getParameter("time") + ":00";
                 dao.insertManualAttendance(memId, storeId, type, fullTime);
                 
             } else if ("update".equals(mode)) {
-                int idx = Integer.parseInt(request.getParameter("idx"));
-                String type = request.getParameter("type");
-                String fullTime = request.getParameter("date") + " " + request.getParameter("time") + ":00";
-                dao.updateAttendance(idx, fullTime, type);
+                // 출퇴근 동시 다중 수정
+                String date = request.getParameter("date");
+                String inIdx = request.getParameter("inIdx");
+                String outIdx = request.getParameter("outIdx");
+                String inTime = request.getParameter("inTime");
+                String outTime = request.getParameter("outTime");
+                
+                if (inIdx != null && !inIdx.trim().isEmpty() && inTime != null && !inTime.trim().isEmpty()) {
+                    String fullInTime = date + " " + inTime + ":00";
+                    dao.updateAttendance(Integer.parseInt(inIdx), fullInTime, "출근");
+                }
+                
+                if (outIdx != null && !outIdx.trim().isEmpty() && outTime != null && !outTime.trim().isEmpty()) {
+                    String fullOutTime = date + " " + outTime + ":00";
+                    dao.updateAttendance(Integer.parseInt(outIdx), fullOutTime, "퇴근");
+                }
                 
             } else if ("delete".equals(mode)) {
-                int idx = Integer.parseInt(request.getParameter("idx"));
-                dao.deleteAttendance(idx);
+                // 출퇴근 동시 다중 삭제
+                String inIdx = request.getParameter("inIdx");
+                String outIdx = request.getParameter("outIdx");
+                
+                if (inIdx != null && !inIdx.trim().isEmpty()) {
+                    dao.deleteAttendance(Integer.parseInt(inIdx));
+                }
+                if (outIdx != null && !outIdx.trim().isEmpty()) {
+                    dao.deleteAttendance(Integer.parseInt(outIdx));
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -55,7 +76,7 @@ public class AdminAttendanceAction extends HttpServlet {
         String rEndDate = request.getParameter("returnEndDate");
         String rSearchMemId = request.getParameter("returnSearchMemId");
 
-        response.sendRedirect("admin_attendance.jsp?startDate=" + (rStartDate != null ? rStartDate : "") 
+        response.sendRedirect("AdminHistory?startDate=" + (rStartDate != null ? rStartDate : "") 
                             + "&endDate=" + (rEndDate != null ? rEndDate : "") 
                             + "&searchMemId=" + (rSearchMemId != null ? rSearchMemId : ""));
     }

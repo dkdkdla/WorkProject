@@ -39,9 +39,9 @@ public class MyPageUpdate extends HttpServlet {
 
             String sql;
             if (isPwUpdate) {
-                sql = "UPDATE tb_member SET mem_phone = ?, work_days = ?, mem_pw = ? WHERE mem_id = ?";
+                sql = "UPDATE tb_member SET mem_phone = ?, mem_pw = ? WHERE mem_id = ?";
             } else {
-                sql = "UPDATE tb_member SET mem_phone = ?, work_days = ? WHERE mem_id = ?";
+                sql = "UPDATE tb_member SET mem_phone = ? WHERE mem_id = ?";
             }
 
             if (isPwUpdate) {
@@ -55,12 +55,11 @@ public class MyPageUpdate extends HttpServlet {
 
             try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
                 pstmt.setString(1, phone);
-                pstmt.setString(2, workDays != null ? workDays : "");
                 if (isPwUpdate) {
-                    pstmt.setString(3, newPw);
-                    pstmt.setString(4, userId);
-                } else {
+                    pstmt.setString(2, newPw);
                     pstmt.setString(3, userId);
+                } else {
+                    pstmt.setString(2, userId);
                 }
                 pstmt.executeUpdate();
                 out.print("{\"status\":\"success\", \"message\":\"정보가 수정되었습니다.\"}");

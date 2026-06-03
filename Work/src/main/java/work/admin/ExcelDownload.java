@@ -4,158 +4,124 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URLEncoder;
 import java.sql.*;
-import java.time.*;
 import java.util.*;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.*;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import work.util.DBConn;
-import work.util.PayCalcUtil;
 
 @WebServlet("/ExcelDownload")
 public class ExcelDownload extends HttpServlet {
-
+    
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        HttpSession session = request.getSession(false);
+        // 세션 체크
+        javax.servlet.http.HttpSession session = request.getSession(false);
         String role = session != null ? (String)session.getAttribute("userRole") : null;
         if (role == null || !"A".equals(role.trim())) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "권한이 없습니다.");
             return;
         }
 
+        // 1. 파라미터 수신
         String storeId = request.getParameter("storeId");
-        String year    = request.getParameter("year");
-        String month   = request.getParameter("month");
+        String year = request.getParameter("year");
+        String month = request.getParameter("month");
 
-        String formattedMonth = (month.length() == 1) ? "0" + month : month;
-        String startDate = year + "-" + formattedMonth + "-01";
-        // 해당 월 마지막 날 계산
-        LocalDate lastDay = LocalDate.of(Integer.parseInt(year), Integer.parseInt(month), 1)
-                                     .withDayOfMonth(LocalDate.of(Integer.parseInt(year), Integer.parseInt(month), 1).lengthOfMonth());
-        String endDate = lastDay.toString();
-
+        // 2. 엑셀 다운로드 헤더 설정
         String fileName = "salary_" + year + "_" + month + ".xls";
+        String encodedFileName = URLEncoder.encode(fileName, "UTF-8").replaceAll("\\+", "%20");
+        
         response.setContentType("application/vnd.ms-excel; charset=UTF-8");
-        response.setHeader("Content-Disposition",
-            "attachment; filename=\"" + URLEncoder.encode(fileName, "UTF-8").replaceAll("\\+", "%20") + "\"");
+        response.setHeader("Content-Disposition", "attachment; filename=\"" + encodedFileName + "\"");
 
         PrintWriter out = response.getWriter();
+
+        // 3. 날짜 범위 계산
+        String formattedMonth = (month.length() == 1) ? "0" + month : month;
+        String startDate = year + "-" + formattedMonth + "-01 00:00:00";
+        
+        int nextMonth = Integer.parseInt(month) + 1;
+        String nextYear = year;
+        if (nextMonth > 12) {
+            nextMonth = 1;
+            nextYear = String.valueOf(Integer.parseInt(year) + 1);
+        }
+        String formattedNextMonth = (nextMonth < 10) ? "0" + nextMonth : String.valueOf(nextMonth);
+        String endDate = nextYear + "-" + formattedNextMonth + "-01 00:00:00";
+
+        // 4. HTML(Excel) 출력 시작
         out.println("<html><head><meta charset='UTF-8'>");
-        out.println("<style>");
-        out.println("table{border-collapse:collapse;width:100%}");
-        out.println("th{background:#4e73df;color:#fff;border:1px solid #000;padding:8px 12px;font-weight:bold}");
-        out.println("td{border:1px solid #ccc;padding:8px 12px}");
-        out.println(".money{text-align:right} .center{text-align:center}");
-        out.println("h2{color:#333;margin-bottom:4px} .sub{color:#666;font-size:13px}");
-        out.println("</style></head><body>");
-        out.println("<h2>" + year + "년 " + month + "월 급여 정산 내역</h2>");
-        out.println("<p class='sub'>매장: " + storeId + " &nbsp;|&nbsp; 기간: " + startDate + " ~ " + endDate + "</p>");
-        out.println("<table><thead><tr>");
-        out.println("<th>이름</th><th>아이디</th><th>총 근무시간</th><th>기본 시급</th><th>기본급</th><th>주휴수당</th><th>예상 총 급여</th>");
-        out.println("</tr></thead><tbody>");
+        out.println("<style>table { border-collapse: collapse; } th { background-color: #f0f0f0; border: 1px solid #000; } td { border: 1px solid #000; text-align: center; }</style>");
+        out.println("</head><body>");
+        out.println("<h2>" + year + "년 " + month + "월 급여 정산 내역 (" + storeId + ")</h2>");
+        out.println("<table><thead><tr><th>이름 (아이디)</th><th>총 근무시간</th><th>시급</th><th>총 급여</th></tr></thead><tbody>");
 
-        int grandTotal = 0;
-
+        // 5. DB 데이터 조회 및 계산
         try (Connection conn = DBConn.getConnection()) {
-            // 직원 목록 (tb_my_stores 기반, NULL join_status도 포함 - 기존 데이터 호환)
-            String memSql = "SELECT m.mem_id, m.mem_name, m.hourly_wage, " +
-                            "ISNULL(ms.work_type,'') as work_type " +
-                            "FROM tb_my_stores ms JOIN tb_member m ON ms.mem_id = m.mem_id " +
-                            "WHERE ms.store_id = ? " +
-                            "AND (ms.join_status = 'ACTIVE' OR ms.join_status IS NULL) " +
-                            "AND m.mem_role = 'S' ORDER BY m.mem_name";
-
-            String attSql = "SELECT att_type, att_time, ISNULL(role_id,0) as role_id " +
-                            "FROM tb_attendance WHERE mem_id = ? AND store_id = ? " +
-                            "AND (att_type IN ('IN','OUT','출근','퇴근')) " +
-                            "AND CAST(att_time AS DATE) BETWEEN ? AND ? ORDER BY att_time ASC";
-
-            try (PreparedStatement ps = conn.prepareStatement(memSql)) {
-                ps.setString(1, storeId);
-                try (ResultSet rs = ps.executeQuery()) {
+            // 멤버 조회
+            String memSql = "SELECT m.mem_id, m.mem_name, " +
+                            "ISNULL(r.hourly_wage, m.hourly_wage) as hourly_wage " +
+                            "FROM tb_member m " +
+                            "JOIN tb_my_stores ms ON m.mem_id = ms.mem_id " +
+                            "LEFT JOIN tb_role r ON ms.role_id = r.role_id " +
+                            "WHERE ms.store_id = ? AND ms.join_status = 'ACTIVE' AND m.mem_role = 'S'";
+            try (PreparedStatement pstmt = conn.prepareStatement(memSql)) {
+                pstmt.setString(1, storeId);
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    
                     while (rs.next()) {
                         String memId = rs.getString("mem_id");
-                        String name  = rs.getString("mem_name");
-                        int wage     = rs.getInt("hourly_wage");
-                        String wt    = rs.getString("work_type");
+                        String name = rs.getString("mem_name");
+                        int wage = rs.getInt("hourly_wage");
 
-                        long totalMin = 0; int totalPay = 0; int holidayPay = 0;
-                        Map<String, Long> weeklyMap = new LinkedHashMap<>();
-                        Map<String, Object[]> lastInMap = new HashMap<>();
+                        // 해당 멤버의 출퇴근 기록 조회
+                        String attSql = "SELECT att_type, att_time FROM tb_attendance " +
+                                       "WHERE mem_id = ? AND store_id = ? " +
+                                       "AND att_time >= ? AND att_time < ? ORDER BY att_time ASC";
+                        
+                        try (PreparedStatement pstmtAtt = conn.prepareStatement(attSql)) {
+                            pstmtAtt.setString(1, memId);
+                            pstmtAtt.setString(2, storeId);
+                            pstmtAtt.setString(3, startDate);
+                            pstmtAtt.setString(4, endDate);
+                            
+                            try (ResultSet rsAtt = pstmtAtt.executeQuery()) {
+                                long totalMin = 0;
+                                Timestamp lastIn = null;
 
-                        try (PreparedStatement psAtt = conn.prepareStatement(attSql)) {
-                            psAtt.setString(1, memId); psAtt.setString(2, storeId);
-                            psAtt.setString(3, startDate); psAtt.setString(4, endDate);
-                            try (ResultSet rsAtt = psAtt.executeQuery()) {
                                 while (rsAtt.next()) {
-                                    String type    = rsAtt.getString("att_type");
-                                    String timeStr = rsAtt.getString("att_time").substring(0, 16);
-                                    int rid        = rsAtt.getInt("role_id");
+                                    String type = rsAtt.getString("att_type");
+                                    Timestamp curTime = rsAtt.getTimestamp("att_time");
 
-                                    if ("IN".equals(type) || "출근".equals(type)) {
-                                        lastInMap.put("k", new Object[]{timeStr, rid});
-                                    } else if (("OUT".equals(type) || "퇴근".equals(type)) && lastInMap.containsKey("k")) {
-                                        Object[] in = lastInMap.get("k");
-                                        String inStr = (String)in[0]; int rid2 = (int)in[1];
-                                        try {
-                                            LocalDate wd = LocalDate.parse(inStr.substring(0, 10));
-                                            LocalTime st = LocalTime.parse(inStr.substring(11, 16));
-                                            LocalTime et = LocalTime.parse(timeStr.substring(11, 16));
-                                            int pay = PayCalcUtil.calcPay(rid2, wd, st, et, wt);
-                                            // role_id 없으면 기본 시급으로 계산
-                                            if (pay == 0 && wage > 0) {
-                                                long diff = Duration.between(st, et).toMinutes();
-                                                if (diff < 0) diff += 1440;
-                                                pay = (int)(diff / 60.0 * wage);
-                                            }
-                                            totalPay += pay;
-                                            long diff = Duration.between(st, et).toMinutes();
-                                            if (diff < 0) diff += 1440;
-                                            totalMin += diff;
-                                            // 주휴수당용 주간 누적
-                                            String wk = wd.getYear() + "-W" +
-                                                wd.get(java.time.temporal.WeekFields.ISO.weekOfWeekBasedYear());
-                                            weeklyMap.put(wk, weeklyMap.getOrDefault(wk, 0L) + diff);
-                                        } catch (Exception e) { e.printStackTrace(); }
-                                        lastInMap.remove("k");
+                                    if ("출근".equals(type) || "IN".equals(type)) {
+                                        lastIn = curTime;
+                                    } else if (("퇴근".equals(type) || "OUT".equals(type)) && lastIn != null) {
+                                        long diff = curTime.getTime() - lastIn.getTime();
+                                        totalMin += (diff / (1000 * 60));
+                                        lastIn = null;
                                     }
                                 }
-                            }
-                        }
 
-                        // 주휴수당 계산 (주 15시간 이상 시 적용)
-                        for (long wm : weeklyMap.values()) {
-                            if (wm >= 900) {
-                                holidayPay += (int)((Math.min(wm / 60.0, 40) / 40.0) * 8 * wage);
+                                if (totalMin > 0) {
+                                    long totalPay = (long)((totalMin / 60.0) * wage);
+                                    out.println("<tr>");
+                                    out.println("<td>" + name + " (" + memId + ")</td>");
+                                    out.println("<td>" + (totalMin / 60) + "시간 " + (totalMin % 60) + "분</td>");
+                                    out.println("<td>" + String.format("%,d", wage) + "</td>");
+                                    out.println("<td style='text-align:right;'>" + String.format("%,d", totalPay) + "원</td>");
+                                    out.println("</tr>");
+                                }
                             }
-                        }
-                        int totalWithHoliday = totalPay + holidayPay;
-
-                        if (totalMin > 0) {
-                            grandTotal += totalWithHoliday;
-                            out.println("<tr>");
-                            out.println("<td>" + name + "</td>");
-                            out.println("<td class='center'>" + memId + "</td>");
-                            out.println("<td class='center'>" + (totalMin/60) + "h " + (totalMin%60) + "m</td>");
-                            out.println("<td class='money'>" + String.format("%,d", wage) + "원</td>");
-                            out.println("<td class='money'>" + String.format("%,d", totalPay) + "원</td>");
-                            out.println("<td class='money' style='color:#1cc88a;'>" + (holidayPay > 0 ? "+" + String.format("%,d", holidayPay) + "원" : "-") + "</td>");
-                            out.println("<td class='money'><b>" + String.format("%,d", totalWithHoliday) + "원</b></td>");
-                            out.println("</tr>");
                         }
                     }
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
-            out.println("<tr><td colspan='5' style='color:red;'>오류: " + e.getMessage() + "</td></tr>");
+            out.println("<tr><td colspan='4 text-danger'>데이터 처리 오류 발생</td></tr>");
         }
-
-        // 합계 행
-        out.println("<tr style='background:#f8f9fc;'>");
-        out.println("<td colspan='6' style='text-align:right;font-weight:bold;'>합계</td>");
-        out.println("<td class='money' style='font-weight:bold;color:#4e73df;'>" + String.format("%,d", grandTotal) + "원</td>");
-        out.println("</tr>");
 
         out.println("</tbody></table></body></html>");
     }
