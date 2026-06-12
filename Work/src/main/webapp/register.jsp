@@ -77,7 +77,7 @@
                         <label class="btn btn-outline-primary py-2" for="roleStaff"><i class="fa-solid fa-user me-2"></i>직원</label>
                         
                         <input type="radio" class="btn-check" name="role" id="roleAdmin" value="A" onclick="handleRoleChange('A')">
-                        <label class="btn btn-outline-primary py-2" for="roleAdmin"><i class="fa-solid fa-user-tie me-2"></i>관리자</label>
+                        <label class="btn btn-outline-primary py-2" for="roleAdmin"><i class="fa-solid fa-user-tie me-2"></i>점장</label>
                     </div>
                 </div>
 

@@ -224,13 +224,12 @@ public class AttendanceDAO {
 
     public java.util.ArrayList<work.dto.AttendanceDTO> getAttendanceByRange(String storeId, String startDate, String endDate, String searchMemId, String attFilter) {
         java.util.ArrayList<work.dto.AttendanceDTO> list = new java.util.ArrayList<>();
-        if (storeId == null || storeId.isEmpty()) return list;
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet rs = null;
         
         
-        String sql = "SELECT a.idx, a.mem_id, m.mem_name, a.att_type, a.att_time, ISNULL(ms.role_id, 0) as role_id, " +
+        String sql = "SELECT a.idx, a.mem_id, m.mem_name, a.att_type, a.att_time, ISNULL(a.role_id, 0) as role_id, " +
                      "ISNULL(ms.work_type, '') as work_type " +
                      "FROM tb_attendance a " +
                      "JOIN tb_member m ON a.mem_id = m.mem_id " +
@@ -355,7 +354,7 @@ public class AttendanceDAO {
         
         
         String sql = "SELECT a.att_time, a.att_type, ISNULL(s.store_name, '삭제된 매장') as store_name, " +
-                     "ISNULL(ms.role_id, 0) as role_id, ISNULL(ms.work_type, '') as work_type " +
+                     "ISNULL(a.role_id, 0) as role_id, ISNULL(ms.work_type, '') as work_type " +
                      "FROM tb_attendance a " +
                      "LEFT JOIN tb_store s ON a.store_id = s.store_id " +
                      "LEFT JOIN tb_my_stores ms ON a.mem_id = ms.mem_id AND a.store_id = ms.store_id " +
@@ -395,7 +394,7 @@ public class AttendanceDAO {
         java.util.ArrayList<work.dto.AttendanceDTO> list = new java.util.ArrayList<>();
         Connection conn = null; PreparedStatement pstmt = null; ResultSet rs = null;
         String sql = "SELECT a.att_time, a.att_type, ISNULL(s.store_name, '삭제된 매장') as store_name, " +
-                     "ISNULL(ms.role_id, 0) as role_id, ISNULL(ms.work_type, '') as work_type " +
+                     "ISNULL(a.role_id, 0) as role_id, ISNULL(ms.work_type, '') as work_type " +
                      "FROM tb_attendance a " +
                      "LEFT JOIN tb_store s ON a.store_id = s.store_id " +
                      "LEFT JOIN tb_my_stores ms ON a.mem_id = ms.mem_id AND a.store_id = ms.store_id " +

@@ -182,6 +182,7 @@
                 </div>
                 <div id="filterBody" class="px-4 pb-4">
                 <form action="AdminHistory" method="get">
+                    <input type="hidden" name="storeId" value="<%=currentStoreId%>">
                     <%-- 기간 프리셋 버튼 --%>
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-secondary">기간 빠른 선택</label>
